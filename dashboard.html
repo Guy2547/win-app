@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Dashboard</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="config.js"></script>
+    <script src="utils/storage.js"></script>
+    <script src="utils/api.js"></script>
+    <script src="components/modal.js"></script>
+    <script src="components/navbar.js"></script>
+    <script src="components/table.js"></script>
+    <script src="dashboard-new.js" defer></script>
+    
+    <style>
+        :root {
+            --bg: #0f172a;
+            --surface: rgba(30, 41, 59, 0.95);
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --primary: #38bdf8;
+            --primary-hover: #0ea5e9;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --success: #4ade80;
+            --card-bg: rgba(51, 65, 85, 0.5);
+            --border: rgba(148, 163, 184, 0.2);
+        }
+
+        * { box-sizing: border-box; }
+        
+        body {
+            font-family: 'IBM Plex Sans Thai', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f172a 0%, #020617 100%);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 🌟 Navbar */
+        .navbar {
+            background: rgba(15, 23, 42, 0.9);
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .nav-brand h2 { margin: 0; color: var(--primary); font-size: 1.4rem; }
+        .nav-brand p { margin: 4px 0 0; color: var(--muted); font-size: 0.9rem; }
+
+        .nav-user { display: flex; align-items: center; gap: 20px; }
+        .user-info { text-align: right; }
+        .user-info strong { display: block; color: #fff; }
+        .user-info span { font-size: 0.85rem; color: var(--primary); font-weight: 600; }
+
+        .btn-logout {
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-family: inherit;
+            transition: 0.2s;
+        }
+        .btn-logout:hover { background: var(--danger-hover); }
+
+        /* 🌟 Main Container */
+        .container {
+            flex: 1;
+            padding: 40px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        #menu-view {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+            margin-top: 40px;
+        }
+
+        .menu-title { text-align: center; margin-bottom: 20px; }
+        
+        .button-grid {
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .big-btn {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 40px;
+            width: 280px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: none;
+        }
+
+        .big-btn:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 30px rgba(56, 189, 248, 0.2);
+        }
+
+        .big-btn .icon { font-size: 3rem; margin-bottom: 16px; }
+        .big-btn h3 { margin: 0 0 8px; color: white; font-size: 1.3rem; }
+        .big-btn p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+
+        /* 🌟 Data View & Table */
+        #data-view {
+            display: none;
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 30px;
+            border: 1px solid var(--border);
+        }
+
+        .data-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .btn-back {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--muted);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.2s;
+        }
+        .btn-back:hover { background: rgba(255,255,255,0.1); }
+
+        .table-responsive { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th, td { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+        th { color: var(--primary); font-weight: 600; background: rgba(0,0,0,0.2); }
+        tr:hover td { background: rgba(255,255,255,0.05); }
+
+        .access-denied { text-align: center; color: var(--danger); margin-top: 50px; }
+
+        /* 🌟 Filters */
+        .filter-container {
+            display: none;
+            gap: 15px; 
+            margin-bottom: 20px; 
+            flex-wrap: wrap; 
+            background: #1e293b; 
+            padding: 15px; 
+            border-radius: 8px; 
+            border: 1px solid var(--border);
+        }
+        .filter-input {
+            padding: 10px 12px; 
+            border-radius: 6px; 
+            border: 1px solid var(--muted); 
+            background: #0f172a;
+            color: white;
+            font-family: inherit;
+        }
+        .filter-input:focus { outline: none; border-color: var(--primary); }
+
+        /* 🌟 Pagination Styles */
+        .pagination-container {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 6px;
+            margin-top: 20px;
+            color: var(--muted);
+        }
+        .page-item {
+            background: transparent;
+            color: var(--muted);
+            border: 1px solid transparent;
+            min-width: 32px;
+            height: 32px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: 0.2s;
+            padding: 0 8px;
+        }
+        .page-item:hover:not(.disabled):not(.ellipsis) { background: rgba(255, 255, 255, 0.1); color: white; }
+        .page-item.active { border-color: var(--primary); color: var(--primary); font-weight: 600; }
+        .page-item.disabled { opacity: 0.3; cursor: not-allowed; }
+        .page-item.ellipsis { cursor: default; }
+        .per-page-select {
+            background: transparent;
+            color: var(--muted);
+            border: 1px solid var(--border);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-left: 16px;
+            font-size: 0.9rem;
+        }
+        .per-page-select:focus { border-color: var(--primary); }
+        .per-page-select option { background: #0f172a; }
+
+        /* 🌟 Custom Modal Popup */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            display: none; 
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.show { display: flex; opacity: 1; }
+
+        .modal-box {
+            background: #1e293b;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.show .modal-box { transform: translateY(0); }
+        .modal-icon { font-size: 3.5rem; margin-bottom: 16px; }
+        .modal-title { margin: 0 0 12px; color: white; font-size: 1.4rem; }
+        .modal-text { margin: 0 0 24px; color: var(--muted); font-size: 1rem; line-height: 1.5; }
+
+        .modal-actions { display: flex; gap: 16px; justify-content: center; }
+        .btn-modal {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: 0.2s;
+            flex: 1;
+        }
+        .btn-cancel { background: rgba(255,255,255,0.1); color: white; }
+        .btn-cancel:hover { background: rgba(255,255,255,0.2); }
+        .btn-confirm { background: var(--primary); color: #0f172a; }
+        .btn-confirm:hover { filter: brightness(1.1); }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-brand">
+            <h2>Data707 System</h2>
+            <p>Control Panel</p>
+        </div>
+        <div class="nav-user">
+            <div class="user-info">
+                <strong id="display-name">Loading...</strong>
+                <span id="display-role">ROLE</span>
+            </div>
+            <button class="btn-logout" onclick="Navbar.logout()">🚪 ออกจากระบบ</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div id="menu-view">
+            <div class="menu-title">
+                <h2>เลือกเมนูการจัดการ</h2>
+                <p style="color: var(--muted);">เมนูจะแสดงตามสิทธิ์การเข้าถึงของคุณ</p>
+            </div>
+            <div class="button-grid">
+                <div class="big-btn" id="btn-users" onclick="Dashboard.openView('users')">
+                    <div class="icon">👥</div>
+                    <h3>จัดการ User</h3>
+                    <p>ดูรายชื่อและแก้ไขสถานะผู้ใช้งาน</p>
+                </div>
+                <div class="big-btn" id="btn-logs" onclick="Dashboard.openView('logs')">
+                    <div class="icon">📊</div>
+                    <h3>ดู System Logs</h3>
+                    <p>ตรวจสอบประวัติการใช้งานระบบ</p>
+                </div>
+            </div>
+            <div id="no-access-msg" class="access-denied" style="display: none;">
+                <h3>🚫 คุณไม่มีสิทธิ์เข้าถึงเมนูใดๆ ในหน้านี้</h3>
+            </div>
+        </div>
+
+        <div id="data-view">
+            <div class="data-header">
+                <div>
+                    <h2 id="data-title" style="margin: 0; color: var(--primary);">Title</h2>
+                    <p id="data-desc" style="margin: 4px 0 0; color: var(--muted);">Description</p>
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div id="userFilters" style="display: none;">
+                        <select id="searchRole" class="filter-input" onchange="Dashboard.filterUsers()" style="cursor: pointer; min-width: 160px; padding: 8px 12px;">
+                            <option value="">🟢 ทุก Role (All)</option>
+                            <option value="admin">Admin</option>
+                            <option value="hr">HR</option>
+                            <option value="sales">Sales</option>
+                            <option value="it">IT</option>
+                            <option value="marketing">Marketing</option>
+                        </select>
+                    </div>
+                    <button class="btn-back" onclick="Dashboard.goBack()">⬅️ กลับหน้าเลือกเมนู</button>
+                </div>
+            </div>
+
+            <div id="logFilters" class="filter-container">
+                <input type="text" id="searchId" class="filter-input" placeholder="🔍 ค้นหา ID หรือ ชื่อ..." onkeyup="Dashboard.filterLogs()" style="flex: 1; min-width: 200px;">
+                
+                <div style="display: flex; gap: 8px;">
+                    <input type="date" id="searchDate" class="filter-input" onchange="Dashboard.filterLogs()" style="cursor: pointer;">
+                    <button onclick="document.getElementById('searchDate').value=''; Dashboard.filterLogs();" style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--danger); background: transparent; color: var(--danger); cursor: pointer;" title="ล้างวันที่">❌</button>
+                </div>
+
+                <select id="searchStatus" class="filter-input" onchange="Dashboard.filterLogs()" style="cursor: pointer;">
+                    <option value="">🟢 ทุกสถานะ (All)</option>
+                    <option value="SUCCESS">✅ สำเร็จ (SUCCESS)</option>
+                    <option value="FAILED">❌ ไม่สำเร็จ (FAILED)</option>
+                    <option value="WRONG_PASSWORD">🔑 รหัสผิด (WRONG_PASSWORD)</option>
+                    <option value="DEACTIVATED">🚫 ระงับ (DEACTIVATED)</option>
+                </select>
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead id="tableHeader"><tr></tr></thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+
+            <div id="paginationControls" class="pagination-container"></div>
+        </div>
+    </div>
+
+    <div id="custom-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-icon" id="modal-icon">⚠️</div>
+            <h3 class="modal-title" id="modal-title">ยืนยันการทำรายการ</h3>
+            <p class="modal-text" id="modal-text">รายละเอียดข้อความ...</p>
+            <div class="modal-actions">
+                <button class="btn-modal btn-cancel" id="btn-modal-cancel">ยกเลิก</button>
+                <button class="btn-modal btn-confirm" id="btn-modal-confirm">ยืนยัน</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
