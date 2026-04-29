@@ -2,6 +2,27 @@
  * Dashboard Module
  * Main logic for handling view switching, data loading, and filtering.
  */
+
+// 🌟 Helper Function: จัดรูปแบบวันที่ให้สวยงามตามเครื่องของผู้ใช้
+const formatDate = (dateString) => {
+    if (!dateString || dateString === '-') return '-';
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return dateString; 
+
+        return date.toLocaleDateString('th-TH', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
+    } catch (e) {
+        return dateString;
+    }
+};
+
 const Dashboard = {
     state: {
         allLogsData: [],
@@ -24,7 +45,7 @@ const Dashboard = {
         const btnLogs = document.getElementById('btn-logs');
         const noAccessMsg = document.getElementById('no-access-msg');
 
-        // 🌟 ตั้งสิทธิ์การมองเห็นเมนู (Admin & IT เห็นหมด / HR & Marketing เห็นแค่ User)
+        // 🌟 ตั้งสิทธิ์การมองเห็นเมนู
         if (dept === 'admin' || dept === 'it') {
             btnUsers.style.display = 'block';
             btnLogs.style.display = 'block';
@@ -34,7 +55,29 @@ const Dashboard = {
             noAccessMsg.style.display = 'block';
         }
 
-        // 🌟 เชื่อมระบบเปลี่ยนหน้าของ Table เข้ากับฟังก์ชันวาดข้อมูล
+        // 🌟 [Real-time] เชื่อมต่อ Socket.io (เปลี่ยน URL เป็นของ Railway คุณ)
+        // ถ้าใช้ Polling (5 วินาที) ด้านล่างแล้ว จะไม่ใส่ส่วนนี้ก็ได้ครับ
+        try {
+            const socket = io('https://server-logs-dashboard-production-b865.up.railway.app'); 
+            socket.on('new-log', () => {
+                if (Dashboard.state.currentView === 'logs') {
+                    console.log('⚡ Socket: ดึงข้อมูลใหม่...');
+                    Dashboard.loadLogs();
+                }
+            });
+        } catch (e) {
+            console.log('Socket connection failed, falling back to polling.');
+        }
+
+        // 🌟 [Real-time] Polling: ดึงข้อมูลใหม่ทุกๆ 5 วินาที
+        setInterval(() => {
+            if (Dashboard.state.currentView === 'logs') {
+                Dashboard.loadLogs(); 
+                console.log('🔄 Auto-refreshing logs...');
+            }
+        }, 5000);
+
+        // 🌟 เชื่อมระบบเปลี่ยนหน้าของ Table
         Table.onPageChange = () => {
             if (Dashboard.state.currentView === 'users') {
                 Dashboard.renderUsers(Dashboard.state.currentFilteredData);
@@ -48,7 +91,7 @@ const Dashboard = {
         Dashboard.state.currentView = type;
         document.getElementById('menu-view').style.display = 'none';
         document.getElementById('data-view').style.display = 'block';
-        Table.state.currentPage = 1; // รีเซ็ตหน้ากลับไปหน้า 1
+        Table.state.currentPage = 1;
 
         const title = document.getElementById('data-title');
         const desc = document.getElementById('data-desc');
@@ -75,9 +118,6 @@ const Dashboard = {
         document.getElementById('menu-view').style.display = 'flex';
     },
 
-    // ==========================================
-    // 🌟 ส่วนจัดการ Users
-    // ==========================================
     loadUsers: async () => {
         Table.showLoading(5);
         try {
@@ -93,7 +133,6 @@ const Dashboard = {
     filterUsers: () => {
         const searchRole = document.getElementById('searchRole').value.toLowerCase();
         Dashboard.state.currentFilteredData = Dashboard.state.allUsersData.filter(row => {
-            // รองรับทั้งคีย์พิมพ์เล็กและพิมพ์ใหญ่
             const role = (row.DEPARTMENT || row.department || row.ROLE || row.role || '').toLowerCase();
             return searchRole === "" || role === searchRole;
         });
@@ -114,8 +153,6 @@ const Dashboard = {
 
         paginatedData.forEach(row => {
             const tr = document.createElement('tr');
-            
-            // ดึงข้อมูลแบบเผื่อหลังบ้านส่งมาเป็นตัวพิมพ์เล็ก
             const userId = row.USER_ID || row.user_id || '-';
             const username = row.USERNAME || row.username || '-';
             const dept = row.DEPARTMENT || row.department || row.ROLE || row.role || '-';
@@ -138,8 +175,6 @@ const Dashboard = {
             `;
             tbody.appendChild(tr);
         });
-        
-        // 🌟 แก้ไขเป็น setupPagination ให้ตรงกับ table.js แล้ว!
         Table.setupPagination(data.length); 
     },
 
@@ -157,18 +192,15 @@ const Dashboard = {
         }
     },
 
-    // ==========================================
-    // 🌟 ส่วนจัดการ Logs
-    // ==========================================
     loadLogs: async () => {
-        Table.showLoading(7);
+        // ไม่ต้องใช้ Table.showLoading() ในโหมด Auto-refresh เพื่อไม่ให้จอกะพริบ
         try {
             const res = await ApiService.getAllLogs();
             Dashboard.state.allLogsData = res.data;
             Dashboard.state.currentFilteredData = res.data;
             Dashboard.renderLogs(res.data);
         } catch (err) {
-            Table.showError(7);
+            // Error handling
         }
     },
 
@@ -202,6 +234,9 @@ const Dashboard = {
         Table.setHeaders(['#', 'USER_ID', 'USERNAME', 'ACTION', 'IP', 'STATUS', 'TIME']);
         const paginatedData = Table.getPaginatedData(data);
         const tbody = document.getElementById('tableBody');
+        
+        // เก็บตำแหน่ง Scroll ไว้ก่อนวาดใหม่ (ป้องกันจอกระโดด)
+        const scrollPos = window.scrollY;
         tbody.innerHTML = '';
 
         if (data.length === 0) {
@@ -211,10 +246,12 @@ const Dashboard = {
 
         paginatedData.forEach((row, idx) => {
             const tr = document.createElement('tr');
-            
             const rawStatus = row.STATUS || row.status || '';
             const statusColor = (rawStatus === 'SUCCESS' || rawStatus === 'ACTIVE') ? '#4ade80' : '#f87171';
             const realIdx = ((Table.state.currentPage - 1) * Table.state.rowsPerPage) + idx + 1;
+
+            const timeValue = row.LOG_TIME || row.log_time || row.formatted_time || '-';
+            const displayTime = formatDate(timeValue);
 
             tr.innerHTML = `
                 <td>${realIdx}</td>
@@ -223,12 +260,11 @@ const Dashboard = {
                 <td>${row.ACTION || row.action || '-'}</td>
                 <td>${row.CLIENT_IP || row.client_ip || '-'}</td>
                 <td style="color: ${statusColor}; font-weight: bold;">${rawStatus}</td>
-                <td>${row.LOG_TIME || row.log_time || row.formatted_time || '-'}</td>
+                <td>${displayTime}</td>
             `;
             tbody.appendChild(tr);
         });
         
-        // 🌟 แก้ไขเป็น setupPagination ให้ตรงกับ table.js แล้ว!
         Table.setupPagination(data.length); 
     }
 };

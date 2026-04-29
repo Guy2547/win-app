@@ -1,6 +1,6 @@
 {
   "name": "logapp",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -9,7 +9,7 @@
   "build": {
     "appId": "com.amornrin.myapp",
     "win": {
-      "target": "nsis", 
+      "target": "nsis",
       "icon": "icon.png"
     },
     "nsis": {
@@ -22,6 +22,9 @@
   },
   "devDependencies": {
     "electron": "^41.3.0",
-    "electron-builder": "^24.13.3"
+    "electron-builder": "^26.8.1"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.8.3"
   }
 }
