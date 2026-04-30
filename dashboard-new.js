@@ -200,7 +200,7 @@ const Dashboard = {
         
         console.log("เช็คข้อมูลดิบ:", res);
 
-        // 🌟 จุดสำคัญ: ต้องแกะเอาเฉพาะชั้น .data มาใช้ (เพราะ Backend ส่ง { status: 'success', data: [...] })
+        
         const logs = (res && res.data) ? res.data : (Array.isArray(res) ? res : []);
 
         if (logs.length > 0) {
