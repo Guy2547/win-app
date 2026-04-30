@@ -192,17 +192,29 @@ const Dashboard = {
         }
     },
 
-    loadLogs: async () => {
-        // ไม่ต้องใช้ Table.showLoading() ในโหมด Auto-refresh เพื่อไม่ให้จอกะพริบ
-        try {
-            const res = await ApiService.getAllLogs();
-            Dashboard.state.allLogsData = res.data;
-            Dashboard.state.currentFilteredData = res.data;
-            Dashboard.renderLogs(res.data);
-        } catch (err) {
-            // Error handling
+        loadLogs: async () => {
+    try {
+        // ดึงข้อมูลจาก URL ที่คุณเปิดใน Browser แล้วเจอ Ammarin
+        const response = await fetch(`${CONFIG.API_URL}/all-logs`);
+        const res = await response.json();
+        
+        console.log("เช็คข้อมูลดิบ:", res);
+
+        // 🌟 จุดสำคัญ: ต้องแกะเอาเฉพาะชั้น .data มาใช้ (เพราะ Backend ส่ง { status: 'success', data: [...] })
+        const logs = (res && res.data) ? res.data : (Array.isArray(res) ? res : []);
+
+        if (logs.length > 0) {
+            Dashboard.state.allLogsData = logs;
+            Dashboard.state.currentFilteredData = logs;
+            Dashboard.renderLogs(logs); // สั่งวาดตาราง
+        } else {
+            console.log("ไม่พบข้อมูลหรือดึงข้อมูลมาผิดชั้น");
+            Table.showEmpty(7);
         }
-    },
+    } catch (err) {
+        console.error("ดึง Logs ล้มเหลว:", err);
+    }
+},
 
     filterLogs: () => {
         const searchId = document.getElementById('searchId').value.toLowerCase();
