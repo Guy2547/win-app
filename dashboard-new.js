@@ -38,25 +38,51 @@ const Dashboard = {
         }
 
         const user = StorageService.getUser();
-        Navbar.init(user.name, user.dept);
+        
+        // 🌟 จับข้อมูลที่ได้มา "หั่น" ให้กลายเป็น Array แยกคำ
+        let userRoles = [];
+        if (user.dept) {
+            if (Array.isArray(user.dept)) {
+                userRoles = user.dept.map(r => String(r).toLowerCase().trim());
+            } else {
+                userRoles = String(user.dept).split(',').map(r => r.toLowerCase().trim());
+            }
+        }
 
-        const dept = (user.dept || '').toLowerCase();
+        // จัดข้อความโชว์มุมขวาบน (เช่น "IT, HR")
+        const roleDisplay = userRoles.length > 0 ? userRoles.join(', ').toUpperCase() : 'ROLE';
+        Navbar.init(user.name, roleDisplay);
+
         const btnUsers = document.getElementById('btn-users');
         const btnLogs = document.getElementById('btn-logs');
         const noAccessMsg = document.getElementById('no-access-msg');
 
-        // 🌟 ตั้งสิทธิ์การมองเห็นเมนู
-        if (dept === 'admin' || dept === 'it') {
-            btnUsers.style.display = 'block';
-            btnLogs.style.display = 'block';
-        } else if (dept === 'hr' || dept === 'marketing') {
-            btnUsers.style.display = 'block';
-        } else {
-            noAccessMsg.style.display = 'block';
+        // รีเซ็ตการแสดงผลก่อน
+        if (noAccessMsg) noAccessMsg.style.display = 'none';
+        if (btnUsers) btnUsers.style.display = 'none';
+        if (btnLogs) btnLogs.style.display = 'none';
+
+        // 🌟 แยกสิทธิ์การมองเห็นทีละปุ่มให้เด็ดขาด
+        let hasAccess = false;
+
+        // 1. ปุ่มจัดการ User (ให้เฉพาะ Admin, HR, Marketing)
+        if (userRoles.includes('admin') || userRoles.includes('hr') || userRoles.includes('marketing')) {
+            if (btnUsers) btnUsers.style.display = 'block';
+            hasAccess = true;
         }
 
-        // 🌟 [Real-time] เชื่อมต่อ Socket.io (เปลี่ยน URL เป็นของ Railway คุณ)
-        // ถ้าใช้ Polling (5 วินาที) ด้านล่างแล้ว จะไม่ใส่ส่วนนี้ก็ได้ครับ
+        // 2. ปุ่มดู System Logs (ให้เฉพาะ Admin, IT)
+        if (userRoles.includes('admin') || userRoles.includes('it')) {
+            if (btnLogs) btnLogs.style.display = 'block';
+            hasAccess = true;
+        }
+
+        // 3. ถ้าไม่มีสิทธิ์เลย
+        if (!hasAccess) {
+            if (noAccessMsg) noAccessMsg.style.display = 'block';
+        }
+
+        // 🌟 [Real-time] เชื่อมต่อ Socket.io
         try {
             const socket = io('https://server-logs-dashboard-production-b865.up.railway.app'); 
             socket.on('new-log', () => {
@@ -101,14 +127,14 @@ const Dashboard = {
         if (type === 'users') {
             title.innerText = '👥 ระบบจัดการ User';
             desc.innerText = 'รายชื่อผู้ใช้งานทั้งหมดในระบบ';
-            logFilters.style.display = 'none';
-            userFilters.style.display = 'block';
+            if (logFilters) logFilters.style.display = 'none';
+            if (userFilters) userFilters.style.display = 'block';
             Dashboard.loadUsers();
         } else {
             title.innerText = '📊 System Logs Activity';
             desc.innerText = 'ประวัติการเข้าใช้งานและเหตุการณ์ในระบบ';
-            logFilters.style.display = 'flex';
-            userFilters.style.display = 'none';
+            if (logFilters) logFilters.style.display = 'flex';
+            if (userFilters) userFilters.style.display = 'none';
             Dashboard.loadLogs();
         }
     },
@@ -122,9 +148,9 @@ const Dashboard = {
         Table.showLoading(5);
         try {
             const res = await ApiService.getAllUsers();
-            Dashboard.state.allUsersData = res.data;
-            Dashboard.state.currentFilteredData = res.data;
-            Dashboard.renderUsers(res.data);
+            Dashboard.state.allUsersData = res.data || res; 
+            Dashboard.state.currentFilteredData = Dashboard.state.allUsersData;
+            Dashboard.renderUsers(Dashboard.state.currentFilteredData);
         } catch (err) {
             Table.showError(5);
         }
@@ -133,8 +159,11 @@ const Dashboard = {
     filterUsers: () => {
         const searchRole = document.getElementById('searchRole').value.toLowerCase();
         Dashboard.state.currentFilteredData = Dashboard.state.allUsersData.filter(row => {
-            const role = (row.DEPARTMENT || row.department || row.ROLE || row.role || '').toLowerCase();
-            return searchRole === "" || role === searchRole;
+            let rawRoles = row.DEPARTMENT || row.department || row.ROLE || row.role || [];
+            if (typeof rawRoles === 'string') rawRoles = rawRoles.split(','); // หั่นคำตอนค้นหาด้วย
+            const roleList = rawRoles.map(r => (r || '').trim().toLowerCase());
+            
+            return searchRole === "" || roleList.includes(searchRole);
         });
         Table.state.currentPage = 1;
         Dashboard.renderUsers(Dashboard.state.currentFilteredData);
@@ -155,16 +184,19 @@ const Dashboard = {
             const tr = document.createElement('tr');
             const userId = row.USER_ID || row.user_id || '-';
             const username = row.USERNAME || row.username || '-';
-            const dept = row.DEPARTMENT || row.department || row.ROLE || row.role || '-';
-            const rawStatus = row.STATUS || row.status || 'ACTIVE';
+            
+            let rawRoles = row.DEPARTMENT || row.department || row.ROLE || row.role || [];
+            if (typeof rawRoles === 'string') rawRoles = rawRoles.split(',');
+            const deptDisplay = rawRoles.length > 0 ? rawRoles.map(r => r.trim().toUpperCase()).join(', ') : '-';
 
+            const rawStatus = row.STATUS || row.status || 'ACTIVE';
             let currentStatus = rawStatus === 'DEACTIVATED' ? 'INACTIVATED' : rawStatus;
             const statusColor = currentStatus === 'ACTIVE' ? '#4ade80' : '#f87171';
             
             tr.innerHTML = `
                 <td>${userId}</td>
                 <td>${username}</td>
-                <td>${dept}</td>
+                <td><span style="background: rgba(56, 189, 248, 0.1); color: var(--primary); padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: bold;">${deptDisplay}</span></td>
                 <td style="color: ${statusColor}; font-weight: bold;">${currentStatus}</td>
                 <td>
                     <select onchange="Dashboard.changeStatus('${userId}', this.value)" style="padding: 6px; border-radius: 6px; background: rgba(15,23,42,0.9); color: white; border: 1px solid var(--primary); cursor: pointer;">
@@ -192,29 +224,24 @@ const Dashboard = {
         }
     },
 
-        loadLogs: async () => {
-    try {
-        // ดึงข้อมูลจาก URL ที่คุณเปิดใน Browser แล้วเจอ Ammarin
-        const response = await fetch(`${CONFIG.API_URL}/all-logs`);
-        const res = await response.json();
-        
-        console.log("เช็คข้อมูลดิบ:", res);
+    loadLogs: async () => {
+        try {
+            const response = await fetch(`${CONFIG.API_URL}/logs`);
+            const res = await response.json();
+            
+            const logs = (res && res.data) ? res.data : (Array.isArray(res) ? res : []);
 
-        
-        const logs = (res && res.data) ? res.data : (Array.isArray(res) ? res : []);
-
-        if (logs.length > 0) {
-            Dashboard.state.allLogsData = logs;
-            Dashboard.state.currentFilteredData = logs;
-            Dashboard.renderLogs(logs); // สั่งวาดตาราง
-        } else {
-            console.log("ไม่พบข้อมูลหรือดึงข้อมูลมาผิดชั้น");
-            Table.showEmpty(7);
+            if (logs.length > 0) {
+                Dashboard.state.allLogsData = logs;
+                Dashboard.state.currentFilteredData = logs;
+                Dashboard.renderLogs(logs); 
+            } else {
+                Table.showEmpty(7);
+            }
+        } catch (err) {
+            console.error("ดึง Logs ล้มเหลว:", err);
         }
-    } catch (err) {
-        console.error("ดึง Logs ล้มเหลว:", err);
-    }
-},
+    },
 
     filterLogs: () => {
         const searchId = document.getElementById('searchId').value.toLowerCase();
@@ -247,8 +274,6 @@ const Dashboard = {
         const paginatedData = Table.getPaginatedData(data);
         const tbody = document.getElementById('tableBody');
         
-        // เก็บตำแหน่ง Scroll ไว้ก่อนวาดใหม่ (ป้องกันจอกระโดด)
-        const scrollPos = window.scrollY;
         tbody.innerHTML = '';
 
         if (data.length === 0) {

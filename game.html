@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Flappy Bird - Data707</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            margin: 0; 
+            background: #0f172a; 
+            color: white; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            font-family: 'IBM Plex Sans Thai', sans-serif; 
+            height: 100vh; 
+        }
+        canvas { 
+            background: #7dd3fc; /* สีฟ้าท้องฟ้า */
+            border-radius: 10px; 
+            border: 4px solid #38bdf8;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .header { text-align: center; margin-bottom: 15px; }
+        #scoreBoard { font-size: 28px; font-weight: bold; color: #f8fafc; }
+        .controls-hint { font-size: 14px; color: #94a3b8; margin-top: 5px; }
+        .btn-back { 
+            margin-top: 20px; 
+            padding: 12px 24px; 
+            background: rgba(239, 68, 68, 0.8); 
+            color: white; 
+            border: 1px solid #ef4444; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            font-family: inherit;
+            transition: 0.2s;
+        }
+        .btn-back:hover { background: #ef4444; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div id="scoreBoard">คะแนน: 0</div>
+        <div class="controls-hint">กด Spacebar หรือ คลิกเมาส์ เพื่อกระโดด</div>
+    </div>
+    
+    <canvas id="gameCanvas" width="320" height="480"></canvas>
+    
+    <!-- ปุ่มนี้พากลับไปหน้า Welcome ครับ -->
+    <button onclick="window.history.back()">⬅️ กลับ</button>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        let frames = 0;
+        let score = 0;
+        let gameOver = false;
+
+        // ตัวนก
+        const bird = {
+            x: 50, y: 150, w: 24, h: 24,
+            gravity: 0.25, velocity: 0, jump: -5.5,
+            draw() {
+                ctx.fillStyle = "#fbbf24"; // สีเหลือง
+                ctx.beginPath();
+                ctx.arc(this.x + this.w/2, this.y + this.h/2, this.w/2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // ตา
+                ctx.fillStyle = "white";
+                ctx.beginPath();
+                ctx.arc(this.x + 16, this.y + 8, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = "black";
+                ctx.beginPath();
+                ctx.arc(this.x + 18, this.y + 8, 2, 0, Math.PI * 2);
+                ctx.fill();
+            },
+            update() {
+                this.velocity += this.gravity;
+                this.y += this.velocity;
+                
+                // ชนพื้น
+                if (this.y + this.h >= canvas.height) {
+                    this.y = canvas.height - this.h;
+                    gameOver = true;
+                }
+                // ชนเพดาน
+                if (this.y <= 0) {
+                    this.y = 0;
+                    this.velocity = 0;
+                }
+            },
+            flap() {
+                this.velocity = this.jump;
+            }
+        };
+
+        // ท่อ
+        const pipes = {
+            items: [], width: 50, gap: 130, dx: 2,
+            draw() {
+                for (let i = 0; i < this.items.length; i++) {
+                    let p = this.items[i];
+                    ctx.fillStyle = "#22c55e"; // สีเขียว
+                    ctx.fillRect(p.x, 0, this.width, p.top);
+                    ctx.fillRect(p.x, canvas.height - p.bottom, this.width, p.bottom);
+                    
+                    // ขอบท่อ
+                    ctx.fillStyle = "#16a34a";
+                    ctx.fillRect(p.x - 2, p.top - 20, this.width + 4, 20);
+                    ctx.fillRect(p.x - 2, canvas.height - p.bottom, this.width + 4, 20);
+                }
+            },
+            update() {
+                // สร้างท่อใหม่ทุกๆ 120 เฟรม
+                if (frames % 120 === 0) {
+                    let topHeight = Math.random() * (canvas.height - this.gap - 80) + 40;
+                    let bottomHeight = canvas.height - topHeight - this.gap;
+                    this.items.push({ x: canvas.width, top: topHeight, bottom: bottomHeight, passed: false });
+                }
+                
+                for (let i = 0; i < this.items.length; i++) {
+                    let p = this.items[i];
+                    p.x -= this.dx;
+
+                    // เช็คชนท่อ
+                    if (bird.x < p.x + this.width && bird.x + bird.w > p.x &&
+                        (bird.y < p.top || bird.y + bird.h > canvas.height - p.bottom)) {
+                        gameOver = true;
+                    }
+
+                    // ได้คะแนนเมื่อบินผ่าน
+                    if (p.x + this.width < bird.x && !p.passed) {
+                        score++;
+                        p.passed = true;
+                        document.getElementById("scoreBoard").innerText = "คะแนน: " + score;
+                    }
+
+                    // ลบท่อที่ลอยออกนอกจอ
+                    if (p.x + this.width <= 0) {
+                        this.items.shift();
+                        i--;
+                    }
+                }
+            },
+            reset() {
+                this.items = [];
+            }
+        };
+
+        // วาดหน้าจอ
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            pipes.draw();
+            bird.draw();
+            
+            if (gameOver) {
+                ctx.fillStyle = "rgba(15, 23, 42, 0.7)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = "white";
+                ctx.font = "bold 30px 'IBM Plex Sans Thai', sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText("เกมโอเวอร์!", canvas.width/2, canvas.height/2 - 10);
+                ctx.font = "16px 'IBM Plex Sans Thai', sans-serif";
+                ctx.fillText("คลิกเมาส์ หรือ กด Spacebar", canvas.width/2, canvas.height/2 + 25);
+                ctx.fillText("เพื่อเล่นใหม่", canvas.width/2, canvas.height/2 + 50);
+            }
+        }
+
+        function update() {
+            if (!gameOver) {
+                bird.update();
+                pipes.update();
+            }
+        }
+
+        function loop() {
+            update();
+            draw();
+            frames++;
+            requestAnimationFrame(loop);
+        }
+
+        window.addEventListener("keydown", (e) => {
+            if (e.code === "Space") {
+                if (gameOver) resetGame();
+                else bird.flap();
+            }
+        });
+        canvas.addEventListener("mousedown", () => {
+            if (gameOver) resetGame();
+            else bird.flap();
+        });
+
+        function resetGame() {
+            bird.y = 150;
+            bird.velocity = 0;
+            pipes.reset();
+            score = 0;
+            frames = 0;
+            document.getElementById("scoreBoard").innerText = "คะแนน: " + score;
+            gameOver = false;
+        }
+
+        loop();
+    </script>
+</body>
+</html>

@@ -2,133 +2,56 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <title>Welcome - User Portal</title>
+    <title>Welcome - Data707 System</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- นำเข้าไฟล์ JS ให้ถูกต้อง -->
     <script src="config.js"></script>
-    <script src="utils/storage.js"></script>
+    <script src="js/storage.js"></script>
     <script src="js/welcome.js"></script>
+
+    <!-- (ใส่ CSS ของคุณตรงนี้ได้เลย ผมขอละไว้เพื่อให้โค้ดสั้นลงนะครับ) -->
     <style>
-        :root {
-            --bg: #0f172a;
-            --panel: rgba(30, 41, 59, 0.7);
-            --text: #f8fafc;
-            --muted: #94a3b8;
-            --primary: #38bdf8;
-            --danger: #ef4444;
-            --border: rgba(148, 163, 184, 0.15);
-            --shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-        }
-
-        * { box-sizing: border-box; }
-        body {
-            font-family: 'IBM Plex Sans Thai', 'Inter', sans-serif;
-            margin: 0;
-            height: 100vh;
-            background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.15), transparent 25%),
-                        linear-gradient(180deg, #020617 0%, #0f172a 100%);
-            color: var(--text);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        /* กล่องหลัก (ห้ามแก้ความกว้างตรงนี้ ไม่งั้นมันจะโดนบีบ) */
-        .welcome-card {
-            background: var(--panel);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--border);
-            border-radius: 24px;
-            padding: 50px 40px;
-            width: 100%;
-            max-width: 500px;
-            text-align: center;
-            box-shadow: var(--shadow);
-        }
-
-        /* 🌟 กล่องควบคุมขนาดรูป GIF โดยเฉพาะ (ปรับตัวเลข 160px ให้เล็ก-ใหญ่ได้ตามต้องการ) */
-        .gif-container {
-            width: 160px; 
-            margin: 0 auto 15px auto;
-        }
-
-        h1 { margin: 0 0 10px; font-size: 2rem; color: #fff; }
-        p { margin: 0 0 30px; color: var(--muted); line-height: 1.6; }
-
-        .user-info {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 20px;
-            text-align: left;
-            margin-bottom: 30px;
-        }
-
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 12px;
-            font-size: 0.95rem;
-        }
-        .info-row:last-child { margin-bottom: 0; }
-        .info-label { color: var(--muted); }
-        .info-value { color: var(--primary); font-weight: 500; }
-
-        .btn-logout {
-            background-color: var(--danger);
-            color: white;
-            border: none;
-            padding: 14px 24px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 600;
-            width: 100%;
-            transition: transform 0.2s, background-color 0.2s;
-            font-family: inherit;
-        }
-
-        .btn-logout:hover { background-color: #dc2626; }
-        .btn-logout:active { transform: scale(0.98); }
+        body { font-family: 'IBM Plex Sans Thai', sans-serif; background: #0f172a; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: rgba(30, 41, 59, 0.8); padding: 30px; border-radius: 15px; width: 350px; text-align: center; border: 1px solid rgba(148, 163, 184, 0.2); }
+        .info-box { background: rgba(15, 23, 42, 0.5); padding: 15px; border-radius: 10px; margin: 20px 0; text-align: left; }
+        .row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .row:last-child { margin-bottom: 0; }
+        .text-muted { color: #94a3b8; }
+        .text-primary { color: #38bdf8; font-weight: bold; }
+        .btn-blue { background: #38bdf8; color: #0f172a; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
+        .btn-dark { background: transparent; color: #f8fafc; border: 1px solid rgba(148, 163, 184, 0.2); padding: 12px; width: 100%; border-radius: 8px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="welcome-card">
+    <div class="card">
+        <!-- รูปโปรไฟล์ -->
+        <img src="img/profile.png" alt="Profile" style="width: 100px; border-radius: 10px; margin-bottom: 15px;" onerror="this.src='https://via.placeholder.com/100'">
         
-        <div class="gif-container">
-            <div class="tenor-gif-embed" data-postid="15395569902524576661" data-share-method="host" data-aspect-ratio="1" data-width="100%">
-                <a href="https://tenor.com/view/blue-archive-gif-15395569902524576661">Blue Archive Sticker</a> from <a href="https://tenor.com/search/blue+archive-stickers">Blue Archive Stickers</a>
-            </div>
-            <script type="text/javascript" async src="https://tenor.com/embed.js"></script>
-        </div>
+        <h2>ยินดีต้อนรับ</h2>
 
-        <h1>ยินดีต้อนรับ</h1>
-        <p>เข้าสู่ระบบจัดการข้อมูลส่วนบุคคล</p>
-
-        <div class="user-info">
-            <div class="info-row">
-                <span class="info-label">รหัสพนักงาน:</span>
-                <span class="info-value" id="displayId">-</span>
+        <!-- กล่องแสดงข้อมูล (ใช้ ID ให้ตรงกับใน JS) -->
+        <div class="info-box">
+            <div class="row">
+                <span class="text-muted">รหัส:</span>
+                <span id="user-id" class="text-primary">-</span>
             </div>
-            <div class="info-row">
-                <span class="info-label">ชื่อ-นามสกุล:</span>
-                <span class="info-value" id="displayName">-</span>
+            <div class="row">
+                <span class="text-muted">ชื่อ:</span>
+                <span id="user-name" class="text-primary">-</span>
             </div>
-            <div class="info-row">
-                <span class="info-label">แผนก (Department):</span>
-                <span class="info-value" id="displayDept" style="text-transform: uppercase;">-</span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">เวลาเข้าสู่ระบบ:</span>
-                <span class="info-value" id="displayTime" style="color: #cbd5e1;">-</span>
+            <div class="row">
+                <span class="text-muted">แผนก:</span>
+                <span id="user-dept" class="text-primary">-</span>
             </div>
         </div>
 
-        <button class="btn-logout" onclick="WelcomePage.logout()">ออกจากระบบ</button>
+        <!-- ปุ่มกดต่างๆ ผูกคำสั่ง onclick เรียบร้อย -->
+        <button onclick="playGame()" class="btn-blue">🎮 เล่นเกม Flappy Bird รอ</button>
+        <button onclick="logout()" class="btn-dark">🚪 ออกจากระบบ</button>
     </div>
 
 </body>

@@ -4,9 +4,13 @@
  */
 const LoginPage = {
     init: () => {
-        if (StorageService.isLoggedIn()) {
-            const dept = StorageService.getUserDept()?.toLowerCase();
-            window.location.href = dept === 'admin' || dept === 'hr' ? 'dashboard.html' : 'welcome.html';
+        // เช็คว่าเคยล็อกอินไว้ไหม (เช็คจาก LocalStorage ตรงๆ)
+        if (localStorage.getItem('u_id') && localStorage.getItem('u_name')) {
+            let rawDept = localStorage.getItem('u_dept') || '';
+            let deptArray = rawDept.toLowerCase().split(',');
+            
+            const isAdminOrHR = deptArray.includes('admin') || deptArray.includes('hr');
+            window.location.href = isAdminOrHR ? 'dashboard.html' : 'welcome.html';
             return;
         }
 
@@ -49,26 +53,47 @@ const LoginPage = {
 
         try {
             const res = await ApiService.login(userId, password);
-            const data = res.data;
+            // 🌟 กันเหนียว: เผื่อ api.js ส่งค่ามาเป็น JSON ตรงๆ หรือซ้อนใน .data
+            const data = res.data || res; 
 
-            StorageService.setUser({
-                id: data.user.id || userId,
-                name: data.user.name || 'ผู้ใช้งาน',
-                dept: data.user.dept || 'user',
-                ip: data.session?.ip,
-                loginTime: data.session?.loginTime
-            });
+            // 🌟 เซฟข้อมูลลง LocalStorage ตรงๆ เพื่อตัดปัญหาจาก StorageService
+            localStorage.setItem('u_id', data.user.id || userId);
+            localStorage.setItem('u_name', data.user.name || 'ผู้ใช้งาน');
+            
+            let rawDept = data.user.dept || ['user'];
+            if (Array.isArray(rawDept)) {
+                localStorage.setItem('u_dept', rawDept.join(','));
+            } else {
+                localStorage.setItem('u_dept', String(rawDept));
+            }
 
             loginBtn.style.backgroundColor = '#22c55e';
             loginBtn.innerText = 'เข้าสู่ระบบสำเร็จ! กำลังเปลี่ยนหน้า...';
 
             setTimeout(() => {
-                const dept = (data.user.dept || 'user').toLowerCase();
-                window.location.href = dept === 'admin' || dept === 'hr' ? 'dashboard.html' : 'welcome.html';
+                try {
+                    // 🌟 แปลงแผนกให้เป็น Array แน่นอน 100%
+                    let deptArray = [];
+                    if (Array.isArray(rawDept)) {
+                        deptArray = rawDept.map(d => String(d).toLowerCase());
+                    } else {
+                        deptArray = String(rawDept).toLowerCase().split(',');
+                    }
+
+                    // 🌟 เช็คสิทธิ์เพื่อเด้งไปหน้า Dashboard หรือ Welcome
+                    const isAdminOrHR = deptArray.includes('admin') || deptArray.includes('hr');
+                    window.location.href = isAdminOrHR ? 'dashboard.html' : 'welcome.html';
+                } catch (err) {
+                    // 🚨 ถ้าเกิด Error ตอนกำลังเปลี่ยนหน้า ให้แสดงบนปุ่มเลย!
+                    loginBtn.innerText = 'Error: ' + err.message;
+                    loginBtn.style.backgroundColor = '#ef4444';
+                }
             }, 500);
+
         } catch (error) {
             loginBtn.innerText = 'เข้าสู่ระบบ';
             loginBtn.disabled = false;
+            loginBtn.style.backgroundColor = ''; // รีเซ็ตสีปุ่มกลับเป็นสีเดิม
 
             if (error.response) {
                 switch (error.response.status) {

@@ -18,7 +18,6 @@
     <script src="components/table.js"></script>
     <script src="dashboard-new.js" defer></script>
     
-    
     <style>
         :root {
             --bg: #0f172a;
@@ -113,7 +112,7 @@
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
-            display: none;
+            display: none; /* ซ่อนไว้ก่อน ให้ JS เป็นตัวเปิด */
         }
 
         .big-btn:hover {
@@ -300,18 +299,31 @@
                 <h2>เลือกเมนูการจัดการ</h2>
                 <p style="color: var(--muted);">เมนูจะแสดงตามสิทธิ์การเข้าถึงของคุณ</p>
             </div>
+            
+            <!-- 🌟 กล่องเมนูทั้งหมดอยู่ที่นี่ -->
             <div class="button-grid">
+                
                 <div class="big-btn" id="btn-users" onclick="Dashboard.openView('users')">
                     <div class="icon">👥</div>
                     <h3>จัดการ User</h3>
                     <p>ดูรายชื่อและแก้ไขสถานะผู้ใช้งาน</p>
                 </div>
+                
                 <div class="big-btn" id="btn-logs" onclick="Dashboard.openView('logs')">
                     <div class="icon">📊</div>
                     <h3>ดู System Logs</h3>
                     <p>ตรวจสอบประวัติการใช้งานระบบ</p>
                 </div>
+
+                <!-- 🌟 ปุ่ม Flappy Bird (ผมใส่สไตล์ display: block ให้มันโชว์ตลอดกาล) -->
+                <div class="big-btn" id="btn-game" onclick="window.location.href='game.html'" style="display: block;">
+                    <div class="icon">🎮</div>
+                    <h3>PLAY Flappy Bird</h3>
+                    <p>เล่นเกมคลายเครียด</p>
+                </div>
+                
             </div>
+
             <div id="no-access-msg" class="access-denied" style="display: none;">
                 <h3>🚫 คุณไม่มีสิทธิ์เข้าถึงเมนูใดๆ ในหน้านี้</h3>
             </div>
