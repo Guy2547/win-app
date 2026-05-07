@@ -4,11 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>System Dashboard</title>
-    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet">
-    
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="config.js"></script>
     <script src="utils/storage.js"></script>
@@ -17,182 +15,112 @@
     <script src="components/navbar.js"></script>
     <script src="components/table.js"></script>
     <script src="dashboard-new.js" defer></script>
-    
     <style>
         :root {
-            --bg: #0f172a;
-            --surface: rgba(30, 41, 59, 0.95);
-            --text: #f8fafc;
-            --muted: #94a3b8;
-            --primary: #38bdf8;
-            --primary-hover: #0ea5e9;
-            --danger: #ef4444;
-            --danger-hover: #dc2626;
-            --success: #4ade80;
-            --card-bg: rgba(51, 65, 85, 0.5);
-            --border: rgba(148, 163, 184, 0.2);
+            --bg: #0f172a; --surface: rgba(30,41,59,0.95); --text: #f8fafc;
+            --muted: #94a3b8; --primary: #38bdf8; --primary-hover: #0ea5e9;
+            --danger: #ef4444; --danger-hover: #dc2626; --success: #4ade80;
+            --card-bg: rgba(51,65,85,0.5); --border: rgba(148,163,184,0.2);
         }
-
         * { box-sizing: border-box; }
-
-        body {
-            font-family: 'IBM Plex Sans Thai', sans-serif;
-            margin: 0;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #0f172a 0%, #020617 100%);
-            color: var(--text);
-            display: flex;
-            flex-direction: column;
-        }
+        body { font-family: 'IBM Plex Sans Thai',sans-serif; margin:0; min-height:100vh;
+            background:linear-gradient(135deg,#0f172a 0%,#020617 100%); color:var(--text);
+            display:flex; flex-direction:column; }
 
         /* Navbar */
-        .navbar {
-            background: rgba(15, 23, 42, 0.9);
-            padding: 16px 32px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        }
-        .nav-brand h2 { margin: 0; color: var(--primary); font-size: 1.4rem; }
-        .nav-brand p  { margin: 4px 0 0; color: var(--muted); font-size: 0.9rem; }
-        .nav-user { display: flex; align-items: center; gap: 20px; }
-        .user-info { text-align: right; }
-        .user-info strong { display: block; color: #fff; }
-        .user-info span   { font-size: 0.85rem; color: var(--primary); font-weight: 600; }
-        .btn-logout {
-            background: var(--danger); color: white; border: none;
-            padding: 10px 20px; border-radius: 8px; cursor: pointer;
-            font-weight: 600; font-family: inherit; transition: 0.2s;
-        }
-        .btn-logout:hover { background: var(--danger-hover); }
+        .navbar { background:rgba(15,23,42,0.9); padding:16px 32px; display:flex;
+            justify-content:space-between; align-items:center;
+            border-bottom:1px solid var(--border); box-shadow:0 4px 20px rgba(0,0,0,0.3); }
+        .nav-brand h2 { margin:0; color:var(--primary); font-size:1.4rem; }
+        .nav-brand p  { margin:4px 0 0; color:var(--muted); font-size:0.9rem; }
+        .nav-user { display:flex; align-items:center; gap:20px; }
+        .user-info { text-align:right; }
+        .user-info strong { display:block; color:#fff; }
+        .user-info span   { font-size:0.85rem; color:var(--primary); font-weight:600; }
+        .btn-logout { background:var(--danger); color:white; border:none; padding:10px 20px;
+            border-radius:8px; cursor:pointer; font-weight:600; font-family:inherit; transition:0.2s; }
+        .btn-logout:hover { background:var(--danger-hover); }
 
         /* Container */
-        .container {
-            flex: 1; padding: 40px 20px;
-            max-width: 1200px; margin: 0 auto; width: 100%;
-        }
+        .container { flex:1; padding:40px 20px; max-width:1200px; margin:0 auto; width:100%; }
 
-        /* Menu View */
-        #menu-view {
-            display: flex; flex-direction: column;
-            align-items: center; gap: 24px; margin-top: 40px;
-        }
-        .menu-title { text-align: center; margin-bottom: 20px; }
-        .button-grid { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; }
-        .big-btn {
-            background: var(--surface); border: 1px solid var(--border);
-            border-radius: 16px; padding: 40px; width: 280px;
-            text-align: center; cursor: pointer; transition: all 0.3s ease; display: none;
-        }
-        .big-btn:hover {
-            transform: translateY(-5px); border-color: var(--primary);
-            box-shadow: 0 10px 30px rgba(56,189,248,0.2);
-        }
-        .big-btn .icon { font-size: 3rem; margin-bottom: 16px; }
-        .big-btn h3 { margin: 0 0 8px; color: white; font-size: 1.3rem; }
-        .big-btn p  { margin: 0; color: var(--muted); font-size: 0.9rem; }
+        /* Menu */
+        #menu-view { display:flex; flex-direction:column; align-items:center; gap:24px; margin-top:40px; }
+        .menu-title { text-align:center; margin-bottom:20px; }
+        .button-grid { display:flex; gap:24px; justify-content:center; flex-wrap:wrap; }
+        .big-btn { background:var(--surface); border:1px solid var(--border); border-radius:16px;
+            padding:40px; width:280px; text-align:center; cursor:pointer; transition:all 0.3s ease; display:none; }
+        .big-btn:hover { transform:translateY(-5px); border-color:var(--primary);
+            box-shadow:0 10px 30px rgba(56,189,248,0.2); }
+        .big-btn .icon { font-size:3rem; margin-bottom:16px; }
+        .big-btn h3 { margin:0 0 8px; color:white; font-size:1.3rem; }
+        .big-btn p  { margin:0; color:var(--muted); font-size:0.9rem; }
 
         /* Data View */
-        #data-view {
-            display: none; background: var(--surface);
-            border-radius: 16px; padding: 30px; border: 1px solid var(--border);
-        }
-        .data-header {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
-        }
-        .btn-back {
-            background: transparent; color: var(--text); border: 1px solid var(--muted);
-            padding: 8px 16px; border-radius: 8px; cursor: pointer; font-family: inherit;
-            display: flex; align-items: center; gap: 8px; transition: 0.2s;
-        }
-        .btn-back:hover { background: rgba(255,255,255,0.1); }
-        .btn-add {
-            background: var(--success); color: #0f172a; border: none;
-            padding: 8px 20px; border-radius: 8px; cursor: pointer;
-            font-weight: 600; font-family: inherit;
-            display: flex; align-items: center; gap: 8px; transition: 0.2s;
-        }
-        .btn-add:hover { filter: brightness(1.1); transform: scale(1.05); }
+        #data-view { display:none; background:var(--surface); border-radius:16px;
+            padding:30px; border:1px solid var(--border); }
+        .data-header { display:flex; justify-content:space-between; align-items:center;
+            margin-bottom:24px; padding-bottom:16px; border-bottom:1px solid var(--border); }
+        .btn-back { background:transparent; color:var(--text); border:1px solid var(--muted);
+            padding:8px 16px; border-radius:8px; cursor:pointer; font-family:inherit;
+            display:flex; align-items:center; gap:8px; transition:0.2s; }
+        .btn-back:hover { background:rgba(255,255,255,0.1); }
+        .btn-add { background:var(--success); color:#0f172a; border:none; padding:8px 20px;
+            border-radius:8px; cursor:pointer; font-weight:600; font-family:inherit;
+            display:flex; align-items:center; gap:8px; transition:0.2s; }
+        .btn-add:hover { filter:brightness(1.1); transform:scale(1.05); }
 
         /* Filters */
-        #userFilters, #logFilters {
-            display: none; gap: 12px; flex-wrap: wrap;
-            margin-bottom: 20px; align-items: center;
-        }
-        .filter-input {
-            padding: 8px 14px; background: #0f172a; border: 1px solid var(--border);
-            border-radius: 8px; color: white; font-family: inherit; font-size: 0.9rem;
-        }
-        .filter-input:focus { border-color: var(--primary); outline: none; }
-        .btn-filter {
-            padding: 8px 16px; background: var(--primary); color: #0f172a;
-            border: none; border-radius: 8px; cursor: pointer;
-            font-weight: 600; font-family: inherit; transition: 0.2s;
-        }
-        .btn-filter:hover { background: var(--primary-hover); color: white; }
+        #userFilters, #logFilters { display:none; gap:12px; flex-wrap:wrap; margin-bottom:20px; align-items:center; }
+        .filter-input { padding:8px 14px; background:#0f172a; border:1px solid var(--border);
+            border-radius:8px; color:white; font-family:inherit; font-size:0.9rem; }
+        .filter-input:focus { border-color:var(--primary); outline:none; }
+        .btn-filter { padding:8px 16px; background:var(--primary); color:#0f172a; border:none;
+            border-radius:8px; cursor:pointer; font-weight:600; font-family:inherit; transition:0.2s; }
+        .btn-filter:hover { background:var(--primary-hover); color:white; }
 
         /* Table */
-        .table-responsive { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; text-align: left; }
-        th, td { padding: 14px 16px; border-bottom: 1px solid var(--border); }
-        th { color: var(--primary); font-weight: 600; background: rgba(0,0,0,0.2); }
-        tr:hover td { background: rgba(255,255,255,0.05); }
+        .table-responsive { overflow-x:auto; }
+        table { width:100%; border-collapse:collapse; text-align:left; }
+        th, td { padding:14px 16px; border-bottom:1px solid var(--border); }
+        th { color:var(--primary); font-weight:600; background:rgba(0,0,0,0.2); }
+        tr:hover td { background:rgba(255,255,255,0.05); }
 
         /* Pagination */
-        #paginationControls {
-            display: flex; justify-content: center; align-items: center;
-            gap: 8px; margin-top: 20px; flex-wrap: wrap;
-        }
-        .page-item {
-            padding: 6px 12px; border-radius: 6px; background: var(--card-bg);
-            border: 1px solid var(--border); color: var(--text); cursor: pointer;
-            font-family: inherit; font-size: 0.9rem; transition: 0.2s;
-        }
-        .page-item:hover    { border-color: var(--primary); color: var(--primary); }
-        .page-item.active   { background: var(--primary); color: #0f172a; font-weight: bold; border-color: var(--primary); }
-        .page-item.disabled { opacity: 0.4; pointer-events: none; }
-        .page-item.ellipsis { cursor: default; border: none; background: transparent; }
-        .per-page-select {
-            padding: 6px 10px; background: #0f172a; border: 1px solid var(--border);
-            border-radius: 6px; color: white; font-family: inherit; font-size: 0.85rem; cursor: pointer;
-        }
+        #paginationControls { display:flex; justify-content:center; align-items:center;
+            gap:8px; margin-top:20px; flex-wrap:wrap; }
+        .page-item { padding:6px 12px; border-radius:6px; background:var(--card-bg);
+            border:1px solid var(--border); color:var(--text); cursor:pointer;
+            font-family:inherit; font-size:0.9rem; transition:0.2s; }
+        .page-item:hover    { border-color:var(--primary); color:var(--primary); }
+        .page-item.active   { background:var(--primary); color:#0f172a; font-weight:bold; border-color:var(--primary); }
+        .page-item.disabled { opacity:0.4; pointer-events:none; }
+        .page-item.ellipsis { cursor:default; border:none; background:transparent; }
+        .per-page-select { padding:6px 10px; background:#0f172a; border:1px solid var(--border);
+            border-radius:6px; color:white; font-family:inherit; font-size:0.85rem; cursor:pointer; }
 
         /* Modal */
-        .form-group { text-align: left; margin-bottom: 15px; }
-        .form-group label { display: block; color: var(--muted); margin-bottom: 5px; font-size: 0.9rem; }
-        .form-input {
-            width: 100%; padding: 12px; background: #0f172a;
-            border: 1px solid var(--border); border-radius: 8px;
-            color: white; font-family: inherit;
-        }
-        .form-input:focus { border-color: var(--primary); outline: none; }
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); backdrop-filter: blur(5px);
-            display: none; justify-content: center; align-items: center;
-            z-index: 9999; opacity: 0; transition: opacity 0.3s ease;
-        }
-        .modal-overlay.show { display: flex; opacity: 1; }
-        .modal-box {
-            background: #1e293b; border: 1px solid var(--border);
-            border-radius: 16px; padding: 32px; max-width: 450px; width: 95%;
-            text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-            transform: translateY(20px); transition: transform 0.3s ease;
-        }
-        .modal-overlay.show .modal-box { transform: translateY(0); }
+        .form-group { text-align:left; margin-bottom:15px; }
+        .form-group label { display:block; color:var(--muted); margin-bottom:5px; font-size:0.9rem; }
+        .form-row { display:flex; gap:12px; }
+        .form-row .form-group { flex:1; }
+        .form-input { width:100%; padding:12px; background:#0f172a; border:1px solid var(--border);
+            border-radius:8px; color:white; font-family:inherit; }
+        .form-input:focus { border-color:var(--primary); outline:none; }
+        .modal-overlay { position:fixed; top:0; left:0; width:100%; height:100%;
+            background:rgba(0,0,0,0.7); backdrop-filter:blur(5px); display:none;
+            justify-content:center; align-items:center; z-index:9999; opacity:0; transition:opacity 0.3s ease; }
+        .modal-overlay.show { display:flex; opacity:1; }
+        .modal-box { background:#1e293b; border:1px solid var(--border); border-radius:16px;
+            padding:32px; max-width:480px; width:95%; text-align:center;
+            box-shadow:0 20px 60px rgba(0,0,0,0.5); transform:translateY(20px); transition:transform 0.3s ease; }
+        .modal-overlay.show .modal-box { transform:translateY(0); }
     </style>
 </head>
 <body>
 
-    <!-- Navbar -->
     <nav class="navbar">
-        <div class="nav-brand">
-            <h2>Data707 System</h2>
-            <p>Control Panel</p>
-        </div>
+        <div class="nav-brand"><h2>Data707 System</h2><p>Control Panel</p></div>
         <div class="nav-user">
             <div class="user-info">
                 <strong id="display-name">Loading...</strong>
@@ -208,23 +136,17 @@
         <div id="menu-view">
             <div class="menu-title">
                 <h2>เลือกเมนูการจัดการ</h2>
-                <p style="color: var(--muted);">เมนูจะแสดงตามสิทธิ์การเข้าถึงของคุณ</p>
+                <p style="color:var(--muted);">เมนูจะแสดงตามสิทธิ์การเข้าถึงของคุณ</p>
             </div>
             <div class="button-grid">
                 <div class="big-btn" id="btn-users" onclick="Dashboard.openView('users')">
-                    <div class="icon">👥</div>
-                    <h3>จัดการ User</h3>
-                    <p>ดูรายชื่อและแก้ไขสถานะผู้ใช้งาน</p>
+                    <div class="icon">👥</div><h3>จัดการ User</h3><p>ดูรายชื่อและแก้ไขสถานะผู้ใช้งาน</p>
                 </div>
                 <div class="big-btn" id="btn-logs" onclick="Dashboard.openView('logs')">
-                    <div class="icon">📊</div>
-                    <h3>ดู System Logs</h3>
-                    <p>ตรวจสอบประวัติการใช้งานระบบ</p>
+                    <div class="icon">📊</div><h3>ดู System Logs</h3><p>ตรวจสอบประวัติการใช้งานระบบ</p>
                 </div>
                 <div class="big-btn" id="btn-game" onclick="window.location.href='game.html'" style="display:block;">
-                    <div class="icon">🎮</div>
-                    <h3>PLAY Flappy Bird</h3>
-                    <p>เล่นเกมคลายเครียด</p>
+                    <div class="icon">🎮</div><h3>PLAY Flappy Bird</h3><p>เล่นเกมคลายเครียด</p>
                 </div>
             </div>
         </div>
@@ -234,7 +156,7 @@
             <div class="data-header">
                 <div>
                     <h2 id="data-title" style="margin:0;color:var(--primary);">Title</h2>
-                    <p id="data-desc"  style="margin:4px 0 0;color:var(--muted);">Description</p>
+                    <p  id="data-desc"  style="margin:4px 0 0;color:var(--muted);">Description</p>
                 </div>
                 <div style="display:flex;align-items:center;gap:15px;">
                     <button id="btnAddUser" class="btn-add" style="display:none;" onclick="Dashboard.showAddUserModal()">
@@ -248,10 +170,10 @@
             <div id="userFilters">
                 <select id="searchRole" class="filter-input">
                     <option value="">— ทุก Role —</option>
-                    <option value="ADMIN">ADMIN</option>
-                    <option value="IT">IT</option>
-                    <option value="HR">HR</option>
-                    <option value="SALE">SALE</option>
+                    <option value="admin">ADMIN</option>
+                    <option value="it">IT</option>
+                    <option value="hr">HR</option>
+                    <option value="sale">SALE</option>
                 </select>
                 <button class="btn-filter" onclick="Dashboard.filterUsers()">🔍 ค้นหา</button>
             </div>
@@ -277,10 +199,7 @@
                     <tbody id="tableBody"></tbody>
                 </table>
             </div>
-
-            <!-- ✅ id ต้องตรงกับ table.js -->
             <div id="paginationControls"></div>
-
         </div>
         <!-- /data-view -->
 
@@ -292,27 +211,37 @@
         <div class="modal-box">
             <h3 style="margin-top:0;">➕ ลงทะเบียนพนักงานใหม่</h3>
             <p style="color:var(--muted);margin-bottom:20px;">กรอกข้อมูลเพื่อบันทึกลงฐานข้อมูล</p>
+
             <div class="form-group">
                 <label>User ID (ตัวเลขเท่านั้น)</label>
-                <input type="number"   id="new_user_id"   class="form-input" placeholder="เช่น 105">
+                <input type="number" id="new_user_id" class="form-input" placeholder="เช่น 105">
             </div>
-            <div class="form-group">
-                <label>ชื่อ-นามสกุล</label>
-                <input type="text"     id="new_username"  class="form-input" placeholder="ระบุชื่อพนักงาน">
+
+            <!-- ✅ แยก First Name + Last Name -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label>ชื่อ (First Name)</label>
+                    <input type="text" id="new_first_name" class="form-input" placeholder="ชื่อ">
+                </div>
+                <div class="form-group">
+                    <label>นามสกุล (Last Name)</label>
+                    <input type="text" id="new_last_name" class="form-input" placeholder="นามสกุล">
+                </div>
             </div>
+
             <div class="form-group">
                 <label>รหัสผ่าน (จะถูก Hash ทันที)</label>
-                <input type="password" id="new_password"  class="form-input" placeholder="ตั้งรหัสผ่าน">
+                <input type="password" id="new_password" class="form-input" placeholder="ตั้งรหัสผ่าน">
             </div>
+
+            <!-- ✅ Role โหลดจาก DB -->
             <div class="form-group">
                 <label>แผนก / Role</label>
                 <select id="new_user_role" class="form-input">
-                    <option value="1">Admin</option>
-                    <option value="2">IT</option>
-                    <option value="3">HR</option>
-                    <option value="5">Sale</option>
+                    <option value="">กำลังโหลด...</option>
                 </select>
             </div>
+
             <div style="display:flex;gap:10px;margin-top:25px;">
                 <button class="btn-logout" style="flex:1;background:rgba(255,255,255,0.1);" onclick="Dashboard.closeAddUserModal()">ยกเลิก</button>
                 <button class="btn-add"    style="flex:2;justify-content:center;"            onclick="Dashboard.submitUser()">💾 บันทึกข้อมูล</button>
