@@ -8,8 +8,9 @@ function createWindow () {
     height: 800,
     icon: path.join(__dirname, 'icon.png'), // ใช้ไฟล์ไอคอนแมวส้มที่ขยายแล้ว
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false
+      nodeIntegration: false,
+      contextIsolation: true,
+      enableRemoteModule: false
     }
   })
 

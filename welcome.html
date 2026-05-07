@@ -2,38 +2,106 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome - Data707 System</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet">
     
-    <!-- นำเข้าไฟล์ JS ให้ถูกต้อง -->
     <script src="config.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/welcome.js"></script>
 
-    <!-- (ใส่ CSS ของคุณตรงนี้ได้เลย ผมขอละไว้เพื่อให้โค้ดสั้นลงนะครับ) -->
     <style>
-        body { font-family: 'IBM Plex Sans Thai', sans-serif; background: #0f172a; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: rgba(30, 41, 59, 0.8); padding: 30px; border-radius: 15px; width: 350px; text-align: center; border: 1px solid rgba(148, 163, 184, 0.2); }
-        .info-box { background: rgba(15, 23, 42, 0.5); padding: 15px; border-radius: 10px; margin: 20px 0; text-align: left; }
+        :root {
+            --danger: #ef4444;
+            --bg: #0f172a;
+            --surface: rgba(30, 41, 59, 0.8);
+            --border: rgba(148, 163, 184, 0.2);
+        }
+
+        body { 
+            font-family: 'IBM Plex Sans Thai', sans-serif; 
+            background: linear-gradient(135deg, #0f172a 0%, #020617 100%); 
+            color: white; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+        }
+
+        .card { 
+            background: var(--surface); 
+            padding: 40px 30px; 
+            border-radius: 20px; 
+            width: 400px; 
+            text-align: center; 
+            border: 1px solid var(--border);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        .info-box { 
+            background: rgba(15, 23, 42, 0.6); 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin: 20px 0; 
+            text-align: left; 
+            border: 1px solid var(--border);
+        }
+
         .row { display: flex; justify-content: space-between; margin-bottom: 10px; }
         .row:last-child { margin-bottom: 0; }
-        .text-muted { color: #94a3b8; }
-        .text-primary { color: #38bdf8; font-weight: bold; }
-        .btn-blue { background: #38bdf8; color: #0f172a; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
-        .btn-dark { background: transparent; color: #f8fafc; border: 1px solid rgba(148, 163, 184, 0.2); padding: 12px; width: 100%; border-radius: 8px; cursor: pointer; }
+        
+        .text-muted { color: #94a3b8; font-size: 0.9rem; }
+        .text-primary { color: #38bdf8; font-weight: 600; }
+
+        /* 🌟 กล่องแจ้งเตือนสิทธิ์ */
+        .no-access-banner {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--danger);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 25px;
+        }
+        .no-access-banner h4 { color: var(--danger); margin: 0 0 5px; font-size: 1rem; }
+        .no-access-banner p { color: #fca5a5; margin: 0; font-size: 0.85rem; }
+
+        .btn-blue { 
+            background: #38bdf8; 
+            color: #0f172a; 
+            border: none; 
+            padding: 14px; 
+            width: 100%; 
+            border-radius: 10px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            margin-bottom: 12px; 
+            transition: 0.3s;
+            font-family: inherit;
+        }
+        .btn-blue:hover { transform: scale(1.02); filter: brightness(1.1); }
+
+        .btn-dark { 
+            background: transparent; 
+            color: #f8fafc; 
+            border: 1px solid var(--border); 
+            padding: 14px; 
+            width: 100%; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            transition: 0.3s;
+            font-family: inherit;
+        }
+        .btn-dark:hover { background: rgba(255,255,255,0.05); }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <!-- รูปโปรไฟล์ -->
-        <img src="img/profile.png" alt="Profile" style="width: 100px; border-radius: 10px; margin-bottom: 15px;" onerror="this.src='https://via.placeholder.com/100'">
-        
-        <h2>ยินดีต้อนรับ</h2>
+        <h2 style="margin: 0 0 5px;">ยินดีต้อนรับ</h2>
 
-        <!-- กล่องแสดงข้อมูล (ใช้ ID ให้ตรงกับใน JS) -->
+        <!-- กล่องแสดงข้อมูลผู้ใช้งาน -->
         <div class="info-box">
             <div class="row">
                 <span class="text-muted">รหัส:</span>
@@ -49,7 +117,13 @@
             </div>
         </div>
 
-        <!-- ปุ่มกดต่างๆ ผูกคำสั่ง onclick เรียบร้อย -->
+        <!-- 🌟 ส่วนที่เพิ่ม: แจ้งเตือนเรื่องสิทธิ์เข้าถึง -->
+        <div class="no-access-banner">
+            <h4>⚠️ สิทธิ์เข้าถึงจำกัด</h4>
+            <p>คุณไม่มีสิทธิ์เข้าถึงระบบจัดการข้อมูลในขณะนี้</p>
+        </div>
+
+        <!-- ปุ่มกดต่างๆ -->
         <button onclick="playGame()" class="btn-blue">🎮 เล่นเกม Flappy Bird รอ</button>
         <button onclick="logout()" class="btn-dark">🚪 ออกจากระบบ</button>
     </div>

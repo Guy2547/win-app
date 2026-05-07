@@ -11,7 +11,7 @@ const ApiService = {
     },
 
     getAllUsers: async () => {
-        return axios.get(`${CONFIG.API_URL}/all-users`);
+        return axios.get(`${CONFIG.API_URL}/api/users/all-users`);
     },
 
     updateUserStatus: async (userId, status, dept) => {
@@ -22,6 +22,6 @@ const ApiService = {
     },
 
     getAllLogs: async () => {
-        return axios.get(`${CONFIG.API_URL}/all-logs`);
+        return axios.get(`${CONFIG.API_URL}/api/logs/all-logs`);
     }
 };
