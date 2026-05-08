@@ -14,101 +14,74 @@
     <script src="js/login.js"></script>
     <style>
         :root {
-            --bg: #0f172a;
-            --panel: rgba(255,255,255,0.95);
-            --text: #111827;
-            --muted: #64748b;
-            --accent: #24627c;
-            --accent-dark: #1e5368;
-            --border: rgba(148,163,184,0.25);
-            --shadow: 0 24px 80px rgba(15,23,42,0.35);
-            --danger-bg: #fef2f2;
-            --danger-text: #ef4444;
-            --danger-border: #fca5a5;
+            --bg: #0f172a; --panel: rgba(255,255,255,0.95); --text: #111827;
+            --muted: #64748b; --accent: #24627c; --accent-dark: #1e5368;
+            --border: rgba(148,163,184,0.25); --shadow: 0 24px 80px rgba(15,23,42,0.35);
+            --danger-bg: #fef2f2; --danger-text: #ef4444; --danger-border: #fca5a5;
+            --success-bg: #f0fdf4; --success-text: #16a34a; --success-border: #86efac;
         }
-
         * { box-sizing: border-box; }
         html, body { margin: 0; min-height: 100%; }
-
         body {
-            font-family: 'IBM Plex Sans Thai', 'Inter', system-ui, sans-serif;
+            font-family: 'IBM Plex Sans Thai','Inter',system-ui,sans-serif;
             color: var(--text);
-            background: radial-gradient(circle at top left, rgba(56,189,248,0.22), transparent 25%),
-                        linear-gradient(180deg, #0f172a 0%, #020617 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 24px;
+            background: radial-gradient(circle at top left,rgba(56,189,248,0.22),transparent 25%),
+                        linear-gradient(180deg,#0f172a 0%,#020617 100%);
+            display: flex; justify-content: center; align-items: center; padding: 24px;
         }
 
-        .login-card {
-            width: min(420px, 100%);
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 24px;
-            padding: 40px 32px;
-            box-shadow: var(--shadow);
-            text-align: center;
+        /* ── Card ── */
+        .card {
+            width: min(440px,100%); background: var(--panel);
+            border: 1px solid var(--border); border-radius: 24px;
+            padding: 40px 32px; box-shadow: var(--shadow); text-align: center;
         }
+        .card h2 { margin: 0 0 12px; font-size: 1.8rem; letter-spacing: -0.02em; }
+        .card p  { margin: 0 0 24px; color: var(--muted); line-height: 1.6; font-size: 0.95rem; }
 
-        .login-card h2 { margin: 0 0 12px; font-size: 1.8rem; letter-spacing: -0.02em; }
-        .login-card p { margin: 0 0 24px; color: var(--muted); line-height: 1.6; font-size: 0.95rem; }
+        /* ── Views ── */
+        .view { display: none; }
+        .view.active { display: block; }
 
+        /* ── Input ── */
         .input-group { text-align: left; margin-bottom: 18px; }
         .input-group label { display: block; margin-bottom: 8px; font-size: 0.95rem; color: var(--muted); font-weight: 500; }
-
-        input {
-            width: 100%;
-            padding: 14px 16px;
-            border-radius: 12px;
-            border: 1px solid #cbd5e1;
-            background: #f8fafc;
-            color: #0f172a;
-            font-size: 1rem;
-            font-family: inherit;
-            transition: border-color 0.2s;
+        input, select {
+            width: 100%; padding: 14px 16px; border-radius: 12px;
+            border: 1px solid #cbd5e1; background: #f8fafc; color: #0f172a;
+            font-size: 1rem; font-family: inherit; transition: border-color 0.2s;
         }
-        
-        input:focus {
-            outline: none;
-            border-color: var(--accent);
-            background: #ffffff;
-        }
+        input:focus, select:focus { outline: none; border-color: var(--accent); background: #fff; }
 
-        .error-message {
-            display: none;
-            background-color: var(--danger-bg);
-            color: var(--danger-text);
-            border: 1px solid var(--danger-border);
-            padding: 12px;
-            border-radius: 12px;
-            margin-bottom: 18px;
-            font-size: 0.9rem;
-            text-align: left;
-            animation: shake 0.4s ease-in-out;
-        }
+        /* ── Messages ── */
+        .msg { display: none; padding: 12px; border-radius: 12px; margin-bottom: 18px;
+               font-size: 0.9rem; text-align: left; }
+        .msg.error   { background: var(--danger-bg);  color: var(--danger-text);  border: 1px solid var(--danger-border);  animation: shake 0.4s; }
+        .msg.success { background: var(--success-bg); color: var(--success-text); border: 1px solid var(--success-border); }
 
-        button {
-            width: 100%;
-            padding: 14px 16px;
-            margin-top: 8px;
-            background-color: var(--accent);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 1.05rem;
-            font-weight: 600;
-            font-family: inherit;
-            transition: background-color 0.2s, transform 0.1s;
+        /* ── Buttons ── */
+        .btn {
+            width: 100%; padding: 14px 16px; margin-top: 8px; border: none;
+            border-radius: 12px; cursor: pointer; font-size: 1.05rem; font-weight: 600;
+            font-family: inherit; transition: background-color 0.2s, transform 0.1s;
         }
+        .btn-primary  { background: var(--accent); color: white; }
+        .btn-primary:hover:not(:disabled)  { background: var(--accent-dark); }
+        .btn-secondary { background: #f1f5f9; color: var(--muted); margin-top: 12px; }
+        .btn-secondary:hover { background: #e2e8f0; color: var(--text); }
+        .btn:active:not(:disabled) { transform: scale(0.98); }
+        .btn:disabled { background: #94a3b8; cursor: not-allowed; }
 
-        button:hover:not(:disabled) { background-color: var(--accent-dark); }
-        button:active:not(:disabled) { transform: scale(0.98); }
-        button:disabled { background-color: #94a3b8; cursor: not-allowed; }
+        /* ── Forgot link ── */
+        .forgot-link {
+            display: inline-block; margin-top: 14px; font-size: 0.88rem;
+            color: var(--accent); cursor: pointer; text-decoration: underline;
+            background: none; border: none; width: auto; padding: 0; font-family: inherit;
+        }
+        .forgot-link:hover { color: var(--accent-dark); }
 
         @keyframes shake {
-            0%, 100% { transform: translateX(0); }
+            0%,100% { transform: translateX(0); }
             25% { transform: translateX(-5px); }
             50% { transform: translateX(5px); }
             75% { transform: translateX(-5px); }
@@ -116,25 +89,72 @@
     </style>
 </head>
 <body>
+<div class="card">
 
-    <div class="login-card">
+    <!-- ══ VIEW 1: Login ══ -->
+    <div id="view-login" class="view active">
         <h2>เข้าสู่ระบบ data707</h2>
         <p>กรุณาใส่ข้อมูลประจำตัวเพื่อเข้าสู่ระบบจัดการบันทึกเซิร์ฟเวอร์</p>
 
-        <div id="errorMessage" class="error-message"></div>
+        <div id="login-error" class="msg error"></div>
 
         <div class="input-group">
-            <label for="userId">USER ID</label>
+            <label>USER ID</label>
             <input type="text" id="userId" placeholder="ใส่รหัสพนักงานของคุณ">
         </div>
-
         <div class="input-group">
-            <label for="password">รหัสผ่าน</label>
+            <label>รหัสผ่าน</label>
             <input type="password" id="password" placeholder="ใส่รหัสผ่าน">
         </div>
 
-        <button type="button" id="loginBtn" onclick="LoginPage.handleLogin()">เข้าสู่ระบบ</button>
+        <button class="btn btn-primary" id="loginBtn" onclick="LoginPage.handleLogin()">เข้าสู่ระบบ</button>
+
+        <!-- ✅ ปุ่มลืมรหัสผ่าน -->
+        <button class="forgot-link" onclick="LoginPage.showForgot()">🔑 ลืมรหัสผ่าน?</button>
     </div>
 
+    <!-- ══ VIEW 2: Forgot — กรอก ID + วันเกิด ══ -->
+    <div id="view-forgot" class="view">
+        <h2>ลืมรหัสผ่าน</h2>
+        <p>ยืนยันตัวตนด้วย USER ID และวันเกิดของคุณ</p>
+
+        <div id="forgot-error"   class="msg error"></div>
+        <div id="forgot-success" class="msg success"></div>
+
+        <div class="input-group">
+            <label>USER ID</label>
+            <input type="text" id="forgot-userId" placeholder="ใส่รหัสพนักงานของคุณ">
+        </div>
+        <div class="input-group">
+            <label>วันเกิด</label>
+            <input type="date" id="forgot-birthdate">
+        </div>
+
+        <button class="btn btn-primary" id="verifyBtn" onclick="LoginPage.verifyIdentity()">ยืนยันตัวตน</button>
+        <button class="btn btn-secondary" onclick="LoginPage.showLogin()">← กลับหน้าเข้าสู่ระบบ</button>
+    </div>
+
+    <!-- ══ VIEW 3: Reset Password ══ -->
+    <div id="view-reset" class="view">
+        <h2>ตั้งรหัสผ่านใหม่</h2>
+        <p>กรอกรหัสผ่านใหม่ของคุณ</p>
+
+        <div id="reset-error"   class="msg error"></div>
+        <div id="reset-success" class="msg success"></div>
+
+        <div class="input-group">
+            <label>รหัสผ่านใหม่</label>
+            <input type="password" id="new-password" placeholder="ตั้งรหัสผ่านใหม่ (อย่างน้อย 6 ตัว)">
+        </div>
+        <div class="input-group">
+            <label>ยืนยันรหัสผ่าน</label>
+            <input type="password" id="confirm-password" placeholder="พิมพ์รหัสผ่านอีกครั้ง">
+        </div>
+
+        <button class="btn btn-primary" id="resetBtn" onclick="LoginPage.resetPassword()">💾 บันทึกรหัสผ่านใหม่</button>
+        <button class="btn btn-secondary" onclick="LoginPage.showLogin()">← กลับหน้าเข้าสู่ระบบ</button>
+    </div>
+
+</div>
 </body>
 </html>
