@@ -1,5 +1,6 @@
 /**
- * Dashboard Module - Data707 System (Fixed Edit Roles)
+ * Dashboard Module - Data707 System
+ * ทุก fetch() เปลี่ยนเป็น ApiService.authFetch() เพื่อแนบ JWT token
  */
 
 const formatDate = (dateString) => {
@@ -15,12 +16,8 @@ const formatDate = (dateString) => {
 
 const Dashboard = {
     state: {
-        allLogsData: [],
-        allUsersData: [],
-        currentFilteredData: [],
-        currentView: 'users',
-        editingUserId: null,  // เก็บ id ที่กำลังแก้ไขอยู่
-        editingUserRoleIds: []
+        allLogsData: [], allUsersData: [], currentFilteredData: [],
+        currentView: 'users', editingUserId: null
     },
 
     _parseRoles: (dept) => {
@@ -31,16 +28,17 @@ const Dashboard = {
 
     // ── Init ─────────────────────────────────
     init: () => {
-        if (!StorageService.isLoggedIn()) { window.location.href = 'index.html'; return; }
+        if (!StorageService.isLoggedIn()) {
+            window.location.href = 'index.html';
+            return;
+        }
         const user      = StorageService.getUser();
         const userRoles = Dashboard._parseRoles(user?.dept);
         Navbar.init(user.name, userRoles.join(', ') || 'USER');
-
         const btnUsers = document.getElementById('btn-users');
         const btnLogs  = document.getElementById('btn-logs');
         if (btnUsers) btnUsers.style.display = (userRoles.includes('ADMIN') || userRoles.includes('HR')) ? 'block' : 'none';
         if (btnLogs)  btnLogs.style.display  = (userRoles.includes('ADMIN') || userRoles.includes('IT')) ? 'block' : 'none';
-
         Table.onPageChange = () => {
             const data = Dashboard.state.currentFilteredData;
             Dashboard.state.currentView === 'users' ? Dashboard.renderUsers(data) : Dashboard.renderLogs(data);
@@ -53,13 +51,11 @@ const Dashboard = {
         document.getElementById('menu-view').style.display = 'none';
         document.getElementById('data-view').style.display = 'block';
         Table.state.currentPage = 1;
-
         const user      = StorageService.getUser();
         const userRoles = Dashboard._parseRoles(user?.dept);
         const btnAddUser  = document.getElementById('btnAddUser');
         const userFilters = document.getElementById('userFilters');
         const logFilters  = document.getElementById('logFilters');
-
         if (type === 'users') {
             document.getElementById('data-title').innerText = '👥 ระบบจัดการ User';
             if (logFilters)  logFilters.style.display  = 'none';
@@ -86,21 +82,21 @@ const Dashboard = {
     loadUsers: async () => {
         Table.showLoading(7);
         try {
-            const res = await ApiService.getAllUsers();
-            Dashboard.state.allUsersData        = Array.isArray(res) ? res : (res.data || []);
+            const data = await ApiService.getAllUsers();   // ✅ มี token อยู่แล้วใน ApiService
+            Dashboard.state.allUsersData        = Array.isArray(data) ? data : (data.data || []);
             Dashboard.state.currentFilteredData  = Dashboard.state.allUsersData;
             Dashboard.renderUsers(Dashboard.state.currentFilteredData);
         } catch (err) {
             console.error('[loadUsers]', err);
-            const tbody = document.getElementById('tableBody');
-            if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#f87171;padding:20px;">❌ ไม่สามารถเชื่อมต่อ API ได้ — ${err.message}</td></tr>`;
+            document.getElementById('tableBody').innerHTML =
+                `<tr><td colspan="7" style="text-align:center;color:#f87171;padding:20px;">❌ ไม่สามารถเชื่อมต่อ API ได้ — ${err.message}</td></tr>`;
         }
     },
 
     filterUsers: () => {
         const searchRole = (document.getElementById('searchRole')?.value || '').toLowerCase().trim();
         Dashboard.state.currentFilteredData = Dashboard.state.allUsersData.filter(row => {
-            const roles = (row.DEPARTMENT || row.department || []).map(r => String(r).toLowerCase());
+            const roles = (row.DEPARTMENT || []).map(r => String(r).toLowerCase());
             return searchRole === '' || roles.includes(searchRole);
         });
         Table.state.currentPage = 1;
@@ -112,45 +108,39 @@ const Dashboard = {
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
         if (!data || data.length === 0) { Table.showEmpty(7); return; }
-
+        const currentRoles = Dashboard._parseRoles(StorageService.getUser()?.dept);
+        const isAdminUser  = currentRoles.includes('ADMIN');
         Table.getPaginatedData(data).forEach(row => {
             const tr      = document.createElement('tr');
-            const uId     = row.USER_ID    || row.user_id    || '-';
-            const uFirst  = row.FIRST_NAME || row.first_name || '-';
-            const uLast   = row.LAST_NAME  || row.last_name  || '-';
-            const uStatus = (row.STATUS    || row.status     || 'ACTIVE').toUpperCase();
-            const uRoles  = row.DEPARTMENT || row.department || [];
-
+            const uId     = row.USER_ID    || '-';
+            const uFirst  = row.FIRST_NAME || '-';
+            const uLast   = row.LAST_NAME  || '-';
+            const uStatus = (row.STATUS    || 'ACTIVE').toUpperCase();
+            const uRoles  = row.DEPARTMENT || [];
             const rolesHtml = uRoles.filter(Boolean).map(r =>
                 `<span style="background:rgba(56,189,248,0.1);color:#38bdf8;padding:4px 8px;
                  border-radius:4px;margin-right:5px;font-size:0.8rem;font-weight:bold;">
-                 ${String(r).toUpperCase()}</span>`
-            ).join('');
-
-            tr.innerHTML = `
-                <td>${uId}</td>
-                <td>${uFirst}</td>
-                <td>${uLast}</td>
-                <td>${rolesHtml || '-'}</td>
-                <td style="color:${uStatus === 'ACTIVE' ? '#4ade80' : '#f87171'};font-weight:bold;">${uStatus}</td>
-                <td>
-                    <select onchange="Dashboard.changeStatus('${uId}', this.value)"
+                 ${String(r).toUpperCase()}</span>`).join('');
+            const statusAction = isAdminUser
+                ? `<select onchange="Dashboard.changeStatus('${uId}',this.value)"
                         style="padding:6px;border-radius:6px;background:#0f172a;color:white;border:1px solid #38bdf8;">
-                        <option value="ACTIVE"      ${uStatus === 'ACTIVE'      ? 'selected' : ''}>ACTIVE</option>
-                        <option value="DEACTIVATED" ${uStatus === 'DEACTIVATED' ? 'selected' : ''}>DEACTIVATED</option>
-                    </select>
-                </td>
-                <td>
-                    <button onclick="Dashboard.showEditModal('${uId}', '${uFirst}', '${uLast}')"
+                        <option value="ACTIVE"      ${uStatus==='ACTIVE'?'selected':''}>ACTIVE</option>
+                        <option value="DEACTIVATED" ${uStatus==='DEACTIVATED'?'selected':''}>DEACTIVATED</option>
+                   </select>`
+                : `<span style="color:#94a3b8;font-size:0.9rem;">ไม่มีสิทธิ์</span>`;
+            const editAction = isAdminUser
+                ? `<button onclick="Dashboard.showEditModal('${uId}','${uFirst}','${uLast}')"
                         style="padding:6px 14px;border-radius:6px;background:rgba(56,189,248,0.15);
-                        color:#38bdf8;border:1px solid #38bdf8;cursor:pointer;font-family:inherit;
-                        font-size:0.85rem;transition:0.2s;"
-                        onmouseover="this.style.background='rgba(56,189,248,0.3)'"
-                        onmouseout="this.style.background='rgba(56,189,248,0.15)'">
+                        color:#38bdf8;border:1px solid #38bdf8;cursor:pointer;font-family:inherit;font-size:0.85rem;">
                         ✏️ แก้ไข
-                    </button>
-                </td>
-            `;
+                   </button>`
+                : `<span style="color:#94a3b8;font-size:0.9rem;">ไม่มีสิทธิ์</span>`;
+            tr.innerHTML = `
+                <td>${uId}</td><td>${uFirst}</td><td>${uLast}</td>
+                <td>${rolesHtml || '-'}</td>
+                <td style="color:${uStatus==='ACTIVE'?'#4ade80':'#f87171'};font-weight:bold;">${uStatus}</td>
+                <td>${statusAction}</td>
+                <td>${editAction}</td>`;
             tbody.appendChild(tr);
         });
         Table.setupPagination(data.length);
@@ -159,8 +149,9 @@ const Dashboard = {
     // ── Change Status ─────────────────────────
     changeStatus: async (userId, newStatus) => {
         try {
-            const res = await fetch(`${CONFIG.API_URL}/api/users/update-status/${userId}`, {
-                method: 'PUT', headers: { 'Content-Type': 'application/json' },
+            // ✅ ใช้ authFetch แนบ token
+            const res = await ApiService.authFetch(`${CONFIG.API_URL}/api/users/update-status/${userId}`, {
+                method: 'PUT',
                 body: JSON.stringify({ status: newStatus })
             });
             const result = await res.json();
@@ -168,64 +159,35 @@ const Dashboard = {
                 Modal.error('เปลี่ยนสถานะล้มเหลว', result.message);
                 Dashboard.loadUsers();
             }
-        } catch (e) {
-            Modal.error('API Error', e.message);
-            Dashboard.loadUsers();
-        }
+        } catch (e) { Modal.error('API Error', e.message); Dashboard.loadUsers(); }
     },
 
-    // ── Edit Modal (แก้ไขระบบส่ง Array Role ให้ถูกต้อง) ────────────────────────────
+    // ── Edit Modal ────────────────────────────
     showEditModal: async (userId, firstName, lastName) => {
         Dashboard.state.editingUserId = userId;
-
-        // ใส่ค่าเดิมลงใน input
         document.getElementById('edit_first_name').value = firstName !== '-' ? firstName : '';
         document.getElementById('edit_last_name').value  = lastName  !== '-' ? lastName  : '';
 
-        // ดึง Role ปัจจุบันเพื่อมาติ๊กถูก
-        const currentUser = Dashboard.state.allUsersData.find(u => (u.USER_ID || u.user_id) == userId);
-        const currentRoles = (currentUser?.DEPARTMENT || currentUser?.department || []).map(r => String(r).toUpperCase());
-        Dashboard.state.editingUserRoleIds = [];
-
-        // โหลด roles จาก DB มาสร้างเป็น Checkbox
         try {
-            const res   = await fetch(`${CONFIG.API_URL}/api/users/roles`);
+            // ✅ ใช้ authFetch
+            const res   = await ApiService.authFetch(`${CONFIG.API_URL}/api/users/roles`);
             const roles = await res.json();
-            
-            const container = document.getElementById('edit_roles_container');
-            if(container) {
-                container.innerHTML = ''; // ล้างข้อมูลเก่า
-                roles.forEach(r => {
-                    const label = document.createElement('label');
-                    label.style.display = 'flex';
-                    label.style.alignItems = 'center';
-                    label.style.gap = '10px';
-                    label.style.color = 'white';
-                    label.style.cursor = 'pointer';
-
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.name = 'edit_roles'; 
-                    checkbox.value = r.role_id;
-                    checkbox.style.width = '18px';
-                    checkbox.style.height = '18px';
-                    checkbox.style.accentColor = '#38bdf8';
-
-                    const hasRoleByName = currentRoles.includes(String(r.role_name).toUpperCase());
-                    const hasRoleById   = currentRoles.includes(String(r.role_id));
-                    if (hasRoleByName || hasRoleById) {
-                        checkbox.checked = true;
-                        Dashboard.state.editingUserRoleIds.push(String(r.role_id));
-                    }
-
-                    label.appendChild(checkbox);
-                    label.appendChild(document.createTextNode(r.role_name.toUpperCase()));
-                    container.appendChild(label);
-                });
-            }
-        } catch (e) {
-            console.error('[loadRoles for edit]', e);
-        }
+            const userRow      = Dashboard.state.allUsersData.find(u => String(u.USER_ID) === String(userId));
+            const currentRoles = (userRow?.DEPARTMENT || []).map(r => r.toLowerCase());
+            const container    = document.getElementById('edit_roles_container');
+            container.innerHTML = '';
+            roles.forEach(r => {
+                const isChecked = currentRoles.includes(r.role_name.toLowerCase());
+                const label = document.createElement('label');
+                label.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;' +
+                    'background:#0f172a;border-radius:8px;border:1px solid rgba(148,163,184,0.2);cursor:pointer;';
+                label.innerHTML = `
+                    <input type="checkbox" value="${r.role_id}" ${isChecked ? 'checked' : ''}
+                        style="width:16px;height:16px;accent-color:#38bdf8;cursor:pointer;">
+                    <span style="color:white;font-weight:600;">${r.role_name.toUpperCase()}</span>`;
+                container.appendChild(label);
+            });
+        } catch (e) { console.error('[loadRoles for edit]', e); }
 
         document.getElementById('edit-user-modal')?.classList.add('show');
     },
@@ -233,85 +195,53 @@ const Dashboard = {
     closeEditModal: () => {
         document.getElementById('edit-user-modal')?.classList.remove('show');
         Dashboard.state.editingUserId = null;
-        Dashboard.state.editingUserRoleIds = [];
     },
 
-    // ฟังก์ชัน submitEdit แบบถูกต้อง (มีแค่อันนี้อันเดียวเท่านั้น)
     submitEdit: async () => {
         const userId    = Dashboard.state.editingUserId;
         const firstName = document.getElementById('edit_first_name')?.value?.trim();
         const lastName  = document.getElementById('edit_last_name')?.value?.trim();
+        const checked   = document.querySelectorAll('#edit_roles_container input[type="checkbox"]:checked');
+        const roleIds   = Array.from(checked).map(cb => parseInt(cb.value));
 
-        // ดึงค่าจาก Checkbox ทุกอันที่ถูกติ๊ก
-        const checkedBoxes = document.querySelectorAll('input[name="edit_roles"]:checked');
-        let roleId = Array.from(checkedBoxes).map(cb => Number(cb.value)).filter(id => !Number.isNaN(id));
-        if (roleId.length === 0 && Dashboard.state.editingUserRoleIds.length > 0) {
-            roleId = Dashboard.state.editingUserRoleIds.map(id => Number(id)).filter(id => !Number.isNaN(id));
-        }
-
-        if (!firstName || !lastName) {
-            Modal.error('กรุณากรอกชื่อและนามสกุล');
-            return;
-        }
-
-        const payload = {
-            userId,
-            USER_ID: userId,
-            firstName,
-            FIRST_NAME: firstName,
-            lastName,
-            LAST_NAME: lastName,
-            roleId,
-            role_id: roleId,
-            dept: roleId
-        };
+        if (!firstName || !lastName) { Modal.error('กรุณากรอกชื่อและนามสกุล'); return; }
 
         try {
-            const res = await fetch(`${CONFIG.API_URL}/api/users/update-user/${userId}`, {
-                method: 'PUT', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+            // ✅ ใช้ authFetch
+            const res = await ApiService.authFetch(`${CONFIG.API_URL}/api/users/update-user/${userId}`, {
+                method: 'PUT',
+                body: JSON.stringify({ firstName, lastName, role_id: roleIds })
             });
             const result = await res.json();
-
-            if (!res.ok || result.status !== 'success') {
-                console.error('[submitEdit] response', res.status, result);
-                Modal.error('ล้มเหลว', result.message || 'ไม่สามารถอัปเดตข้อมูลได้');
-                return;
-            }
-
-            await Modal.success('แก้ไขข้อมูลสำเร็จ');
-            Dashboard.closeEditModal();
-            Dashboard.loadUsers();
-        } catch (e) {
-            console.error('[submitEdit] error', e);
-            Modal.error('API Error', e.message);
-        }
+            if (result.status === 'success') {
+                await Modal.success('แก้ไขข้อมูลสำเร็จ');
+                Dashboard.closeEditModal();
+                Dashboard.loadUsers();
+            } else { Modal.error('ล้มเหลว', result.message); }
+        } catch (e) { Modal.error('API Error', e.message); }
     },
 
     // ── Add User Modal ────────────────────────
     showAddUserModal: async () => {
         try {
-            const res   = await fetch(`${CONFIG.API_URL}/api/users/roles`);
+            // ✅ ใช้ authFetch
+            const res   = await ApiService.authFetch(`${CONFIG.API_URL}/api/users/roles`);
             const roles = await res.json();
             const select = document.getElementById('new_user_role');
-            if(select) {
-                select.innerHTML = '';
-                roles.forEach(r => {
-                    const opt = document.createElement('option');
-                    opt.value     = r.role_id;
-                    opt.innerText = r.role_name.toUpperCase();
-                    select.appendChild(opt);
-                });
-            }
+            select.innerHTML = '';
+            roles.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r.role_id; opt.innerText = r.role_name.toUpperCase();
+                select.appendChild(opt);
+            });
         } catch (e) { console.error('[loadRoles]', e); }
         document.getElementById('add-user-modal')?.classList.add('show');
     },
 
     closeAddUserModal: () => {
         document.getElementById('add-user-modal')?.classList.remove('show');
-        ['new_user_id', 'new_first_name', 'new_last_name', 'new_password'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.value = '';
+        ['new_user_id','new_first_name','new_last_name','new_password'].forEach(id => {
+            const el = document.getElementById(id); if (el) el.value = '';
         });
     },
 
@@ -321,14 +251,13 @@ const Dashboard = {
         const lastName  = document.getElementById('new_last_name')?.value?.trim();
         const password  = document.getElementById('new_password')?.value;
         const roleId    = document.getElementById('new_user_role')?.value;
-
         if (!userId || !firstName || !lastName || !password || !roleId) {
-            Modal.error('กรุณากรอกข้อมูลให้ครบทุกช่อง');
-            return;
+            Modal.error('กรุณากรอกข้อมูลให้ครบ'); return;
         }
         try {
-            const res = await fetch(`${CONFIG.API_URL}/api/users/add`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+            // ✅ ใช้ authFetch
+            const res = await ApiService.authFetch(`${CONFIG.API_URL}/api/users/add`, {
+                method: 'POST',
                 body: JSON.stringify({ userId, firstName, lastName, password, roleId })
             });
             const result = await res.json();
@@ -347,42 +276,50 @@ const Dashboard = {
         Table.showLoading(7);
         try {
             const search = document.getElementById('searchLog')?.value?.trim()  || '';
-            const date   = document.getElementById('filterDate')?.value         || '';
+            const date   = document.getElementById('filterDate')?.value          || '';
             const status = document.getElementById('filterStatus')?.value        || '';
             const params = new URLSearchParams();
             if (search) params.append('search', search);
             if (date)   params.append('date', date);
             if (status) params.append('status', status);
-            const url = `${CONFIG.API_URL}/api/logs/logs${params.toString() ? '?' + params : ''}`;
-            const res = await fetch(url);
+
+            // ✅ ใช้ authFetch
+            const res = await ApiService.authFetch(
+                `${CONFIG.API_URL}/api/logs${params.toString() ? '?' + params : ''}`
+            );
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
             Dashboard.state.allLogsData         = Array.isArray(data) ? data : (data.data || []);
             Dashboard.state.currentFilteredData  = Dashboard.state.allLogsData;
             Dashboard.renderLogs(Dashboard.state.currentFilteredData);
         } catch (err) {
-            const tbody = document.getElementById('tableBody');
-            if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#f87171;padding:20px;">❌ โหลด Logs ไม่ได้ — ${err.message}</td></tr>`;
+            console.error('[loadLogs]', err);
+            document.getElementById('tableBody').innerHTML =
+                `<tr><td colspan="7" style="text-align:center;color:#f87171;padding:20px;">❌ โหลด Logs ไม่ได้ — ${err.message}</td></tr>`;
         }
     },
 
     filterLogs: () => { Table.state.currentPage = 1; Dashboard.loadLogs(); },
 
     renderLogs: (data) => {
-        Table.setHeaders(['LOG_ID', 'USER_ID', 'USERNAME', 'ACTION', 'IP', 'STATUS', 'เวลา']);
+        Table.setHeaders(['LOG_ID','USER_ID','USERNAME','ACTION','IP','STATUS','เวลา']);
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
         if (!data || data.length === 0) { Table.showEmpty(7); return; }
         Table.getPaginatedData(data).forEach(row => {
             const tr = document.createElement('tr');
-            const statusColor = { 'SUCCESS':'#4ade80','NOT_FOUND':'#f87171','WRONG_PASSWORD':'#fb923c','DEACTIVATED':'#a78bfa' }[row.STATUS || row.status] || '#94a3b8';
+            const sc = {
+                'SUCCESS':'#4ade80','NOT_FOUND':'#f87171',
+                'WRONG_PASSWORD':'#fb923c','DEACTIVATED':'#a78bfa'
+            }[row.STATUS||row.status] || '#94a3b8';
             tr.innerHTML = `
-                <td>${row.id||row.log_id||'-'}</td><td>${row.USER_ID||row.user_id||'-'}</td>
-                <td>${row.USERNAME||row.username||'-'}</td><td>${row.ACTION||row.action||'-'}</td>
+                <td>${row.id||row.log_id||'-'}</td>
+                <td>${row.USER_ID||row.user_id||'-'}</td>
+                <td>${row.USERNAME||row.username||'-'}</td>
+                <td>${row.ACTION||row.action||'-'}</td>
                 <td>${row.CLIENT_IP||row.client_ip||'-'}</td>
-                <td style="color:${statusColor};font-weight:bold;">${(row.STATUS||row.status||'-').toUpperCase()}</td>
-                <td>${formatDate(row.LOG_TIME||row.log_time)}</td>
-            `;
+                <td style="color:${sc};font-weight:bold;">${(row.STATUS||row.status||'-').toUpperCase()}</td>
+                <td>${formatDate(row.LOG_TIME||row.log_time)}</td>`;
             tbody.appendChild(tr);
         });
         Table.setupPagination(data.length);

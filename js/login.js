@@ -89,6 +89,7 @@ const LoginPage = {
             const res  = await ApiService.login(userId, password);
             const data = res.data;
 
+            StorageService.setToken(data.token);
             StorageService.setUser({
                 id       : data.user.id   || userId,
                 name     : data.user.name || 'ผู้ใช้งาน',
